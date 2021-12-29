@@ -1,5 +1,4 @@
 import csv
-from Model import Node
 
 with open("Instance.csv", newline='') as f:
     reader = csv.reader(f)
@@ -24,18 +23,9 @@ n = csv_file[7][1]
 # get customer data list (cd)
 cd = []
 for i in range(11, len(csv_file)):
-  c = Node(csv_file[i][0], csv_file[i][1], csv_file[i][2], csv_file[i][3], csv_file[i][4], csv_file[i][5])
+  c = {'id': csv_file[i][0], 'x': csv_file[i][1], 'y': csv_file[i][2], 'demand': csv_file[i][3],
+         'service_time': csv_file[i][4], 'profit': csv_file[i][5]}
   cd.append(c)
-
-print('Vehicles:', k)
-# print('Max Capacity:', q)
-# print('Max Duration:', t)
-# print('Depot x coord:', dx)
-# print('Depot y coord:', dy)
-# print('Customers:', n)
-
-for i in range(0, len(cd)):
-  print(cd[i].id + ', ' + cd[i].demand)
 
 def get_vehicles():
   return k
