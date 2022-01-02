@@ -78,7 +78,6 @@ class TwoOptMove(object):
         self.positionOfSecondNode = None
         self.moveCost = 10 ** 9
 
-
 class Solver:
     def __init__(self, m):
         self.allNodes = m.allNodes
@@ -100,6 +99,7 @@ class Solver:
             print(i, 'Constr:', self.sol.cost)
             # self.MinimumInsertions(i)
             # self.ReportSolution(self.sol)
+            '''
             self.LocalSearch(0)
             if self.overallBestSol == None or self.overallBestSol.cost > self.sol.cost:
                 self.overallBestSol = self.cloneSolution(self.sol)
@@ -107,6 +107,7 @@ class Solver:
 
         self.sol = self.overallBestSol
         self.ReportSolution(self.sol)
+        '''
         return self.sol
 
     def SetRoutedFlagToFalseForAllCustomers(self):
@@ -171,6 +172,7 @@ class Solver:
 
         self.TestSolution()
 
+    '''
     def LocalSearch(self, operator):
         self.bestSolution = self.cloneSolution(self.sol)
         terminationCondition = False
@@ -217,7 +219,7 @@ class Solver:
             localSearchIterator = localSearchIterator + 1
 
         self.sol = self.bestSolution
-
+'''
     def cloneRoute(self, rt: Route):
         cloned = Route(self.depot, self.capacity, self.duration)
         cloned.cost = rt.cost
@@ -234,6 +236,7 @@ class Solver:
         cloned.cost = self.sol.cost
         return cloned
 
+    '''
     def FindBestRelocationMove(self, rm):
         for originRouteIndex in range(0, len(self.sol.routes)):
             rt1: Route = self.sol.routes[originRouteIndex]
@@ -330,6 +333,7 @@ class Solver:
                             self.StoreBestSwapMove(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
                                                    moveCost, costChangeFirstRoute, costChangeSecondRoute, sm)
 
+
     def ApplyRelocationMove(self, rm: RelocationMove):
 
         oldCost = self.CalculateTotalCost(self.sol)
@@ -362,6 +366,7 @@ class Solver:
         if abs((newCost - oldCost) - rm.moveCost) > 0.0001:
             print('Cost Issue')
 
+
     def ApplySwapMove(self, sm):
         oldCost = self.CalculateTotalCost(self.sol)
         rt1 = self.sol.routes[sm.positionOfFirstRoute]
@@ -385,7 +390,7 @@ class Solver:
         # debuggingOnly
         if abs((newCost - oldCost) - sm.moveCost) > 0.0001:
             print('Cost Issue')
-
+'''
     def ReportSolution(self, sol):
         for i in range(0, len(sol.routes)):
             rt = sol.routes[i]
@@ -446,6 +451,7 @@ class Solver:
 
         insCustomer.isRouted = True
 
+    '''
     def StoreBestRelocationMove(self, originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost,
                                 originRtCostChange, targetRtCostChange, rm: RelocationMove):
         rm.originRoutePosition = originRouteIndex
@@ -465,7 +471,7 @@ class Solver:
         sm.costChangeFirstRt = costChangeFirstRoute
         sm.costChangeSecondRt = costChangeSecondRoute
         sm.moveCost = moveCost
-
+'''
     def CalculateTotalCost(self, sol):
         c = 0
         for i in range(0, len(sol.routes)):
@@ -476,6 +482,7 @@ class Solver:
                 c += self.distanceMatrix[a.id][b.id]
         return c
 
+    '''
     def InitializeOperators(self, rm, sm, top):
         rm.Initialize()
         sm.Initialize()
@@ -516,7 +523,7 @@ class Solver:
 
                         if moveCost < top.moveCost:
                             self.StoreBestTwoOptMove(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost, top)
-
+'''
     def CapacityIsViolated(self, rt1, nodeInd1, rt2, nodeInd2):
 
         rt1FirstSegmentLoad = 0
@@ -538,6 +545,7 @@ class Solver:
 
         return False
 
+    '''
     def StoreBestTwoOptMove(self, rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost, top):
         top.positionOfFirstRoute = rtInd1
         top.positionOfSecondRoute = rtInd2
@@ -578,7 +586,7 @@ class Solver:
             self.UpdateRouteCostAndLoad(rt2)
 
         self.sol.cost += top.moveCost
-
+'''
     def UpdateRouteCostAndLoad(self, rt: Route):
         tc = 0
         tl = 0
