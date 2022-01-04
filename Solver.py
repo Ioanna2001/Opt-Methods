@@ -87,6 +87,7 @@ class Solver:
         self.distanceMatrix = m.distances
         self.capacity = int(m.max_capacity)
         self.duration = int(m.max_duration)
+        self.vehicles = int(m.vehicles)
         self.sol = None
         self.bestSolution = None
         self.overallBestSol = None
@@ -109,6 +110,12 @@ class Solver:
         self.ReportSolution(self.sol)
         return self.sol
 
+    def CalculateRouteDuration(self, rt, targetNode):
+        lastRouteNode = rt.sequenceOfNodes[-1].id
+        destinationNode = targetNode.id
+        timeTravelled = self.distanceMatrix[lastRouteNode][destinationNode] + targetNode.service_time
+        return timeTravelled
+
     def SetRoutedFlagToFalseForAllCustomers(self):
         for i in range(0, len(self.customers)):
             self.customers[i].isRouted = False
@@ -117,16 +124,22 @@ class Solver:
         modelIsFeasible = True
         self.sol = Solution()
         insertions = 0
-        while (insertions < len(self.customers)): #Change it to stop when all routes max durations are reached
+        while (insertions < self.vehicles): #Change it to stop when all routes max durations are reached
             bestInsertion = CustomerInsertion()
             lastOpenRoute: Route = self.GetLastOpenRoute()
 
             if lastOpenRoute is not None:
                 self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
-
             if (bestInsertion.customer is not None):
-                self.ApplyCustomerInsertion(bestInsertion)
-                insertions += 1
+                if lastOpenRoute.travelled + self.distanceMatrix[bestInsertion.customer.id][0] + \
+                        self.CalculateRouteDuration(rt, bestInsertion.customer) < lastOpenRoute.duration:
+                    self.ApplyCustomerInsertion(bestInsertion)
+                else:
+                    depotInsertion = CustomerInsertion()
+                    depotInsertion.customer = self.depot
+                    depotInsertion.profit = 0
+                    depotInsertion.route = lastOpenRoute
+                    self.ApplyCustomerInsertion(depotInsertion)
             else:
                 # If there is an empty available route
                 if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
@@ -135,6 +148,7 @@ class Solver:
                 else:
                     rt = Route(self.depot, self.capacity, self.duration)
                     self.sol.routes.append(rt)
+                    insertions += 1
 
         if (modelIsFeasible == False):
             print('FeasibilityIssue')
@@ -145,7 +159,7 @@ class Solver:
         self.sol = Solution()
         insertions = 0
 
-        while (insertions < len(self.customers)): #Change it to stop when all routes max durations are reached
+        while (insertions < self.vehicles): #Change it to stop when all routes max durations are reached
             bestInsertion = CustomerInsertionAllPositions()
             lastOpenRoute: Route = self.GetLastOpenRoute()
 
@@ -153,8 +167,15 @@ class Solver:
                 self.IdentifyBestInsertionAllPositions(bestInsertion, lastOpenRoute, itr)
 
             if (bestInsertion.customer is not None):
-                self.ApplyCustomerInsertionAllPositions(bestInsertion)
-                insertions += 1
+                if lastOpenRoute.travelled + self.distanceMatrix[bestInsertion.customer.id][0] + \
+                        self.CalculateRouteDuration(rt, bestInsertion) < lastOpenRoute.duration:
+                    self.ApplyCustomerInsertionAllPositions(bestInsertion)
+                else:
+                    depotInsertion = CustomerInsertionAllPositions()
+                    depotInsertion.customer = self.depot
+                    depotInsertion.profit = 0
+                    depotInsertion.route = lastOpenRoute
+                    self.ApplyCustomerInsertionAllPositions(depotInsertion)
             else:
                 # If there is an empty available route
                 if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
@@ -162,8 +183,9 @@ class Solver:
                     break
                 # If there is no empty available route and no feasible insertion was identified
                 else:
-                    rt = Route(self.depot, self.capacity)
+                    rt = Route(self.depot, self.capacity, self.duration)
                     self.sol.routes.append(rt)
+                    insertions += 1
 
         if (modelIsFeasible == False):
             print('FeasibilityIssue')
@@ -407,18 +429,19 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 if rt.load + candidateCust.demand <= rt.capacity:
-                    lastNodePresentInTheRoute = rt.sequenceOfNodes[-2] #check if candidates duration fits
-                    trialProfit = candidateCust.profit 
-                    # Update rcl list
-                    if len(rcl) < self.rcl_size:
-                        new_tup = (trialProfit, candidateCust, rt)
-                        rcl.append(new_tup)
-                        rcl.sort(key=lambda x: x[0])
-                    elif trialProfit > rcl[-1][0]: 
-                        rcl.pop(len(rcl) - 1)
-                        new_tup = (trialProfit, candidateCust, rt)
-                        rcl.append(new_tup)
-                        rcl.sort(key=lambda x: x[0])
+                    if self.CalculateRouteDuration(rt, candidateCust) <= rt.duration:
+                        lastNodePresentInTheRoute = rt.sequenceOfNodes[-2] #check if candidates duration fits
+                        trialProfit = candidateCust.profit
+                        # Update rcl list
+                        if len(rcl) < self.rcl_size:
+                            new_tup = (trialProfit, candidateCust, rt)
+                            rcl.append(new_tup)
+                            rcl.sort(key=lambda x: x[0])
+                        elif trialProfit > rcl[-1][0]:
+                            rcl.pop(len(rcl) - 1)
+                            new_tup = (trialProfit, candidateCust, rt)
+                            rcl.append(new_tup)
+                            rcl.sort(key=lambda x: x[0])
         if len(rcl) > 0:
             tup_index = random.randint(0, len(rcl) - 1)
             tpl = rcl[tup_index]
@@ -438,7 +461,7 @@ class Solver:
         profitAdded = insCustomer.profit 
         rt.profit += profitAdded
         self.sol.profit += profitAdded
-
+        rt.travelled += self.CalculateRouteDuration(rt, insCustomer)
         rt.load += insCustomer.demand
 
         insCustomer.isRouted = True
@@ -576,15 +599,16 @@ class Solver:
         self.sol.cost += top.moveCost
 
     def UpdateRouteCostAndLoad(self, rt: Route): # update root duration
-        tc = 0
+        tc = rt.sequenceOfNodes[0].service_time
         tl = 0
         for i in range(0, len(rt.sequenceOfNodes) - 1):
             A = rt.sequenceOfNodes[i]
             B = rt.sequenceOfNodes[i + 1]
             tc += self.distanceMatrix[A.id][B.id] #change to customers profit
+            tc += B.service_time
             tl += A.demand
         rt.load = tl
-        rt.cost = tc
+        rt.travelled = tc
 
     def TestSolution(self):
         totalSolCost = 0
@@ -613,22 +637,20 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 if rt.load + candidateCust.demand <= rt.capacity:
-                    for j in range(0, len(rt.sequenceOfNodes) - 1):
-                        A = rt.sequenceOfNodes[j]
-                        B = rt.sequenceOfNodes[j + 1]
-                        profitAdded = candidateCust.profit
-                        trialProfit = profitAdded 
+                    if self.CalculateRouteDuration(rt, candidateCust) <= rt.duration:
+                        for j in range(0, len(rt.sequenceOfNodes) - 1):
+                            trialProfit = candidateCust.profit
 
-                        if len(rcl) < self.rcl_size:
-                            new_tup = (trialProfit, candidateCust, rt, j)
-                            rcl.append(new_tup)
-                            rcl.sort(key=lambda x: x[0])
-                        elif trialProfit < rcl[-1][0]:
-                            rcl.pop(len(rcl) - 1)
-                            new_tup = (trialProfit, candidateCust, rt, j)
-                            rcl.append(new_tup)
-                            rcl.sort(key=lambda x: x[0])
-        tup_index = random.randint(0, len(self.rcl) - 1)
+                            if len(rcl) < self.rcl_size:
+                                new_tup = (trialProfit, candidateCust, rt, j)
+                                rcl.append(new_tup)
+                                rcl.sort(key=lambda x: x[0])
+                            elif trialProfit < rcl[-1][0]:
+                                rcl.pop(len(rcl) - 1)
+                                new_tup = (trialProfit, candidateCust, rt, j)
+                                rcl.append(new_tup)
+                                rcl.sort(key=lambda x: x[0])
+        tup_index = random.randint(0, self.rcl_size - 1)
         tpl = rcl[tup_index]
         bestInsertion.profit = tpl[0]
         bestInsertion.customer = tpl[1]
@@ -644,5 +666,6 @@ class Solver:
         rt.profit += insertion.profit
         self.sol.profit += insertion.profit
         rt.load += insCustomer.demand
+        rt.travelled += self.CalculateRouteDuration(rt, insCustomer)
         insCustomer.isRouted = True
 

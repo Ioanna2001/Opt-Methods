@@ -48,7 +48,8 @@ class Route:
         self.sequenceOfNodes = []
         self.sequenceOfNodes.append(dp)
         self.sequenceOfNodes.append(dp)
-        self.cost = 0
+        self.profit = 0
         self.capacity = cap
         self.duration = dur
         self.load = 0
+        self.travelled = 0
