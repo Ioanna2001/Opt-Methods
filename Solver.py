@@ -111,11 +111,19 @@ class Solver:
         return self.sol
 
     def CalculateRouteDuration(self, rt, targetNode):
-        lastRouteNode = rt.sequenceOfNodes[-1].id
+        lastRouteNode = rt.sequenceOfNodes[-2].id
         destinationNode = targetNode.id
-        timeTravelled = self.distanceMatrix[lastRouteNode][destinationNode] + targetNode.service_time
+        timeTravelled = self.distanceMatrix[lastRouteNode][destinationNode] + targetNode.service_time + self.distanceMatrix[destinationNode][0]
         return timeTravelled
 
+    def CalculateTravelledTime(self, rt):
+        travelled = 0.0
+        for i in range(0, len(rt.sequenceOfNodes) - 1):
+            A = rt.sequenceOfNodes[i].id
+            B = rt.sequenceOfNodes[i + 1].id
+            travelled += self.distanceMatrix[A][B]
+            travelled += rt.sequenceOfNodes[i + 1].service_time
+        return travelled
     def SetRoutedFlagToFalseForAllCustomers(self):
         for i in range(0, len(self.customers)):
             self.customers[i].isRouted = False
@@ -397,8 +405,8 @@ class Solver:
             rt = sol.routes[i]
             for j in range(0, len(rt.sequenceOfNodes)):
                 print(rt.sequenceOfNodes[j].id, end=' ')
-            print(rt.cost)
-        print(self.sol.cost)
+            print(rt.profit)
+        print(self.sol.profit)
 
     def GetLastOpenRoute(self):
         if len(self.sol.routes) == 0:
@@ -414,7 +422,7 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 if rt.load + candidateCust.demand <= rt.capacity:
-                    if self.CalculateRouteDuration(rt, candidateCust) <= rt.duration:
+                    if self.CalculateRouteDuration(rt, candidateCust) + rt.travelled <= rt.duration:
                         lastNodePresentInTheRoute = rt.sequenceOfNodes[-2] #check if candidates duration fits
                         trialProfit = candidateCust.profit
                         # Update rcl list
@@ -442,15 +450,11 @@ class Solver:
         # before the second depot occurrence
         insIndex = len(rt.sequenceOfNodes) - 1
         rt.sequenceOfNodes.insert(insIndex, insCustomer)
-
-        beforeInserted = rt.sequenceOfNodes[-3]
-
         profitAdded = insCustomer.profit 
         rt.profit += profitAdded
         self.sol.profit += profitAdded
-        rt.travelled += self.CalculateRouteDuration(rt, insCustomer)
+        rt.travelled = self.CalculateTravelledTime(rt)
         rt.load += insCustomer.demand
-
         insCustomer.isRouted = True
 
     def StoreBestRelocationMove(self, originRouteIndex, targetRouteIndex, originNodeIndex, targetNodeIndex, moveCost, #change to Duration changes
@@ -598,7 +602,7 @@ class Solver:
         rt.travelled = tc
 
     def TestSolution(self):
-        totalSolCost = 0
+        totalSolProfit = 0
         for r in range(0, len(self.sol.routes)):
             rt: Route = self.sol.routes[r]
             rtProfit = 0
@@ -624,7 +628,7 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 if rt.load + candidateCust.demand <= rt.capacity:
-                    if self.CalculateRouteDuration(rt, candidateCust) <= rt.duration:
+                    if self.CalculateRouteDuration(rt, candidateCust) + rt.travelled <= rt.duration:
                         for j in range(0, len(rt.sequenceOfNodes) - 1):
                             trialProfit = candidateCust.profit
 
@@ -637,12 +641,13 @@ class Solver:
                                 new_tup = (trialProfit, candidateCust, rt, j)
                                 rcl.append(new_tup)
                                 rcl.sort(key=lambda x: x[0])
-        tup_index = random.randint(0, self.rcl_size - 1)
-        tpl = rcl[tup_index]
-        bestInsertion.profit = tpl[0]
-        bestInsertion.customer = tpl[1]
-        bestInsertion.route = tpl[2]
-        bestInsertion.insertionPosition = tpl[3]
+        if len(rcl) > 0:
+            tup_index = random.randint(0, len(rcl) - 1)
+            tpl = rcl[tup_index]
+            bestInsertion.profit = tpl[0]
+            bestInsertion.customer = tpl[1]
+            bestInsertion.route = tpl[2]
+            bestInsertion.insertionPosition = tpl[3]
 
     def ApplyCustomerInsertionAllPositions(self, insertion):
         insCustomer = insertion.customer
@@ -653,6 +658,6 @@ class Solver:
         rt.profit += insertion.profit
         self.sol.profit += insertion.profit
         rt.load += insCustomer.demand
-        rt.travelled += self.CalculateRouteDuration(rt, insCustomer)
+        rt.travelled = self.CalculateTravelledTime(rt)
         insCustomer.isRouted = True
 
