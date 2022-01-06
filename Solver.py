@@ -131,20 +131,11 @@ class Solver:
             if lastOpenRoute is not None:
                 self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
             if (bestInsertion.customer is not None):
-                #checks if the insertion fits in the route and makes the insertion
-                if lastOpenRoute.travelled + self.distanceMatrix[bestInsertion.customer.id][0] + \
-                        self.CalculateRouteDuration(rt, bestInsertion.customer) < lastOpenRoute.duration:
                     self.ApplyCustomerInsertion(bestInsertion)
-                else:
-                    depotInsertion = CustomerInsertion()
-                    depotInsertion.customer = self.depot
-                    depotInsertion.profit = 0
-                    depotInsertion.route = lastOpenRoute
-                    self.ApplyCustomerInsertion(depotInsertion)
             else:
                 # If there is an empty available route
                 if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
-                    modelIsFeasible = False 
+                    modelIsFeasible = False
                     break
                 else:
                     rt = Route(self.depot, self.capacity, self.duration)
@@ -168,16 +159,7 @@ class Solver:
                 self.IdentifyBestInsertionAllPositions(bestInsertion, lastOpenRoute, itr)
 
             if (bestInsertion.customer is not None):
-                # checks if the insertion fits in the route and makes the insertion
-                if lastOpenRoute.travelled + self.distanceMatrix[bestInsertion.customer.id][0] + \
-                        self.CalculateRouteDuration(rt, bestInsertion) < lastOpenRoute.duration:
                     self.ApplyCustomerInsertionAllPositions(bestInsertion)
-                else:
-                    depotInsertion = CustomerInsertionAllPositions()
-                    depotInsertion.customer = self.depot
-                    depotInsertion.profit = 0
-                    depotInsertion.route = lastOpenRoute
-                    self.ApplyCustomerInsertionAllPositions(depotInsertion)
             else:
                 # If there is an empty available route
                 if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
