@@ -52,7 +52,7 @@ class CustomerInsertion(object):
     def __init__(self):
         self.customer = None
         self.route = None
-        self.profit = -1
+        self.profit = 0
 
 
 class CustomerInsertionAllPositions(object):
@@ -60,7 +60,7 @@ class CustomerInsertionAllPositions(object):
         self.customer = None
         self.route = None
         self.insertionPosition = None
-        self.profit = -1
+        self.profit = 0
 
 
 class TwoOptMove(object):
@@ -76,7 +76,7 @@ class TwoOptMove(object):
         self.positionOfSecondRoute = None
         self.positionOfFirstNode = None
         self.positionOfSecondNode = None
-        self.moveProfit = -1
+        self.moveProfit = 0
 
 
 class Solver:
@@ -124,13 +124,14 @@ class Solver:
         modelIsFeasible = True
         self.sol = Solution()
         insertions = 0
-        while (insertions < self.vehicles): #Change it to stop when all routes max durations are reached
+        while (insertions < self.vehicles): #Stops when all routes max duration and capacity is reached
             bestInsertion = CustomerInsertion()
             lastOpenRoute: Route = self.GetLastOpenRoute()
 
             if lastOpenRoute is not None:
                 self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
             if (bestInsertion.customer is not None):
+                #checks if the insertion fits in the route and makes the insertion
                 if lastOpenRoute.travelled + self.distanceMatrix[bestInsertion.customer.id][0] + \
                         self.CalculateRouteDuration(rt, bestInsertion.customer) < lastOpenRoute.duration:
                     self.ApplyCustomerInsertion(bestInsertion)
@@ -167,6 +168,7 @@ class Solver:
                 self.IdentifyBestInsertionAllPositions(bestInsertion, lastOpenRoute, itr)
 
             if (bestInsertion.customer is not None):
+                # checks if the insertion fits in the route and makes the insertion
                 if lastOpenRoute.travelled + self.distanceMatrix[bestInsertion.customer.id][0] + \
                         self.CalculateRouteDuration(rt, bestInsertion) < lastOpenRoute.duration:
                     self.ApplyCustomerInsertionAllPositions(bestInsertion)
@@ -425,6 +427,7 @@ class Solver:
     def IdentifyBest_NN_ofLastVisited(self, bestInsertion, rt, itr=10):
         random.seed(itr)
         rcl = []
+        #the rcl list holds the 3 NearestNeighbor nodes with the best profit
         for i in range(0, len(self.customers)):
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
@@ -436,6 +439,7 @@ class Solver:
                         if len(rcl) < self.rcl_size:
                             new_tup = (trialProfit, candidateCust, rt)
                             rcl.append(new_tup)
+                            #rcl[-1] holds the NN node with the best profit so far
                             rcl.sort(key=lambda x: x[0])
                         elif trialProfit > rcl[-1][0]:
                             rcl.pop(len(rcl) - 1)
@@ -443,6 +447,7 @@ class Solver:
                             rcl.append(new_tup)
                             rcl.sort(key=lambda x: x[0])
         if len(rcl) > 0:
+            #which one of the three will be inserted is picked randomly
             tup_index = random.randint(0, len(rcl) - 1)
             tpl = rcl[tup_index]
             bestInsertion.profit = tpl[0] 
