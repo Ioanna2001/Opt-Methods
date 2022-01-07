@@ -8,12 +8,12 @@ class Node:
     Used either for customers or for the depot
 
     Attributes:
-        id: ID number
-        x: X-axis number
-        y: Y-axis number
-        demand: Customer's demand
-        service_time: Customer's required service time
-        profit: Profit to be earned from customer
+        - id: ID number
+        - x: X-axis number
+        - y: Y-axis number
+        - demand: Customer's demand
+        - service_time: Customer's required service time
+        - profit: Profit to be earned from customer
     """
     def __init__(self, id, x, y, demand, service_time, profit):
         self.id = id
@@ -29,12 +29,12 @@ class Model:
     """Class that represents model of problem
 
     Attributes:
-        allNodes: List of all model nodes
-        customers: List of all customers
-        max_capacity: Max capacity of vehicles
-        max_duration: Max available time for customer service
-        vehicles: Available vehicles
-        distances: List representing a matrix of all node distances
+        - allNodes: List of all model nodes
+        - customers: List of all nodes representing customers
+        - max_capacity: Max capacity of vehicles
+        - max_duration: Max available time for customer service
+        - vehicles: Available vehicles
+        - distances: List representing a matrix of all node distances
     """
     def __init__(self):
         self.allNodes = []
@@ -70,12 +70,12 @@ class Route:
     """Class that represents a vehicle route
 
     Attributes:
-        sequenceOfNodes: List containing order of nodes visited
-        profit: Profit earned in route
-        capacity: Max capacity of vehicle
-        duration: Max available time for customer service
-        load: Vehicle load
-        travelled: Time spent travelling
+        - sequenceOfNodes: List containing order of nodes visited
+        - profit: Profit earned in route
+        - capacity: Max capacity of vehicle
+        - duration: Max available time for customer service
+        - load: Vehicle load
+        - travelled: Time spent travelling
     """
     def __init__(self, dp, cap, dur):
         self.sequenceOfNodes = []

@@ -3,6 +3,12 @@ import random
 
 
 class Solution:
+    """Represents found solution
+
+    Attributes:
+        - profit: Profit number
+        - routes: List containing vehicle routes
+    """
     def __init__(self):
         self.profit = 0.0
         self.routes = []
@@ -15,13 +21,13 @@ class RelocationMove(object):
     different position, optinally in a different route (sequence of nodes).
 
     Attributes:
-        originRoutePosition: Original route's number of node to be moved
-        targetRoutePosition: Optional destination route number
-        originNodePosition: Original position's number of node
-        targetNodePosition: Destination position number of node
-        durChangeOriginRt: Change of time spent in original route after deletion of node
-        durChangeTargetRt: Change of time spent in target route after insertion of node
-        moveDistance: Change in distance covered
+        - originRoutePosition: Original route's number of node to be moved
+        - targetRoutePosition: Optional destination route number
+        - originNodePosition: Original position's number of node
+        - targetNodePosition: Destination position number of node
+        - durChangeOriginRt: Change of time spent in original route after deletion of node
+        - durChangeTargetRt: Change of time spent in target route after insertion of node
+        - moveDistance: Change in distance covered
     """
     def __init__(self):
         self.originRoutePosition = None
@@ -49,13 +55,13 @@ class SwapMove(object):
     positions and optionally routes (sequences of nodes).
 
     Attributes:
-        positionOfFirstRoute: Route number of first node
-        positionOfSecondRoute: Route number of second node
-        positionOfFirstNode: Position number of first node
-        positionOfSecondNode: Position number of second node
-        profitChangeFirstRt: Change of first route's total profit, if the exchange is applied
-        profitChangeSecondRt: Change of second route's total profit, if the exchange is applied
-        moveProfit: Change in profit earned
+        - positionOfFirstRoute: Route number of first node
+        - positionOfSecondRoute: Route number of second node
+        - positionOfFirstNode: Position number of first node
+        - positionOfSecondNode: Position number of second node
+        - profitChangeFirstRt: Change of first route's total profit, if the exchange is applied
+        - profitChangeSecondRt: Change of second route's total profit, if the exchange is applied
+        - moveProfit: Change in profit earned
     """
     def __init__(self):
         self.positionOfFirstRoute = None
@@ -106,6 +112,16 @@ class TwoOptMove(object):
 
 
 class CustomerInsertion(object):
+    """Represents a node insertion in a route
+
+    To be used for customer nodes
+
+    Attributes:
+        - customer: Customer `Node` for insertion
+        - route: `Route` for customer to be inserted
+        - profit: Profit gained from insertion 
+    """
+
     def __init__(self):
         self.customer = None
         self.route = None
@@ -113,6 +129,17 @@ class CustomerInsertion(object):
 
 
 class CustomerInsertionAllPositions(object):
+    """Represents a node insertion in a specific
+    position of a route
+
+    To be used for customer nodes
+
+    Attributes:
+        - customer: Customer `Node` for insertion
+        - route: `Route` for customer to be inserted
+        - insertionPosition: Position number for insertion
+        - profit: Profit gained from insertion 
+    """
     def __init__(self):
         self.customer = None
         self.route = None
@@ -121,6 +148,21 @@ class CustomerInsertionAllPositions(object):
 
 
 class Solver:
+    """Class to solve built problem model
+
+    Attributes:
+        - allNodes: List of all model nodes
+        - customers: List of all nodes representing customers
+        - depot: Depot node
+        - distanceMatrix: List representing a matrix of all node distances
+        - capacity: Max capacity of vehicles
+        - duration: Max available time for customer service
+        - vehicles: Available vehicles
+        - sol: List of routes, representing current solution
+        - bestSolution: List of routes, representing best solution
+        - overallBestSol: List of routes, representing overall best solution
+        - rcl_size: Number of elements to be used in restricted candidate list
+    """
     def __init__(self, m):
         self.allNodes = m.allNodes
         self.customers = m.customers
@@ -172,6 +214,7 @@ class Solver:
             travelled += self.distanceMatrix[A][B]
             travelled += rt.sequenceOfNodes[i + 1].service_time
         return travelled
+
     def SetRoutedFlagToFalseForAllCustomers(self):
         for i in range(0, len(self.customers)):
             self.customers[i].isRouted = False
