@@ -48,7 +48,8 @@ class Model:
         self.max_capacity = csv_reader.get_capacity()
         self.max_duration = csv_reader.get_duration()
         self.vehicles = csv_reader.get_vehicles()
-        depot = Node(0, csv_reader.get_dx(), csv_reader.get_dy(), 0, 0, 0)
+        depot_x, depot_y = csv_reader.get_depot_coords()
+        depot = Node(0, depot_x, depot_y, 0, 0, 0)
         self.allNodes.append(depot)
         cust_data_lists = csv_reader.get_customer_data()
         custs_map = map(lambda c: Node(int(c['id']), c['x'], c['y'],
