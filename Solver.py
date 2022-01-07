@@ -9,6 +9,20 @@ class Solution:
 
 
 class RelocationMove(object):
+    """Represents LocalSearch operation: Relocation
+
+    Relocation is a 1 - 0 exchange of nodes. A node gets moved to a
+    different position, optinally in a different route (sequence of nodes).
+
+    Attributes:
+        originRoutePosition: Original route's number of node to be moved
+        targetRoutePosition: Optional destination route number
+        originNodePosition: Original position's number of node
+        targetNodePosition: Destination position number of node
+        durChangeOriginRt: Change of time spent in original route after deletion of node
+        durChangeTargetRt: Change of time spent in target route after insertion of node
+        moveDistance: Change in distance covered
+    """
     def __init__(self):
         self.originRoutePosition = None
         self.targetRoutePosition = None
@@ -18,7 +32,7 @@ class RelocationMove(object):
         self.durChangeTargetRt = None
         self.moveDistance = None
 
-    def Initialize(self):
+    def initialize(self):
         self.originRoutePosition = None
         self.targetRoutePosition = None
         self.originNodePosition = None
@@ -29,6 +43,20 @@ class RelocationMove(object):
 
 
 class SwapMove(object):
+    """Represents LocalSearch operation: SwapMove
+
+    SwapMove is a 1 - 1 exchange of nodes. Two nodes exchange
+    positions and optionally routes (sequences of nodes).
+
+    Attributes:
+        positionOfFirstRoute: Route number of first node
+        positionOfSecondRoute: Route number of second node
+        positionOfFirstNode: Position number of first node
+        positionOfSecondNode: Position number of second node
+        profitChangeFirstRt: Change of first route's total profit, if the exchange is applied
+        profitChangeSecondRt: Change of second route's total profit, if the exchange is applied
+        moveProfit: Change in profit earned
+    """
     def __init__(self):
         self.positionOfFirstRoute = None
         self.positionOfSecondRoute = None
@@ -38,7 +66,7 @@ class SwapMove(object):
         self.profitChangeSecondRt = None
         self.moveProfit = None
 
-    def Initialize(self):
+    def initialize(self):
         self.positionOfFirstRoute = None
         self.positionOfSecondRoute = None
         self.positionOfFirstNode = None
@@ -46,6 +74,35 @@ class SwapMove(object):
         self.profitChangeFirstRt = None
         self.profitChangeSecondRt = None
         self.moveProfit = -1
+
+
+class TwoOptMove(object):
+    """Represents LocalSearch operation: TwoOptMove
+
+    TwoOptMove deletes and creates 2 arcs between 2 routes, to avoid crossover and
+    maximize profit.
+
+    Attributes:
+        positionOfFirstRoute: Route number of first node
+        positionOfSecondRoute: Route number of second node
+        positionOfFirstNode: Position number of first node
+        positionOfSecondNode: Position number of second node
+        moveProfit: Change in profit earned
+
+    """
+    def __init__(self):
+        self.positionOfFirstRoute = None
+        self.positionOfSecondRoute = None
+        self.positionOfFirstNode = None
+        self.positionOfSecondNode = None
+        self.moveProfit = None
+
+    def initialize(self):
+        self.positionOfFirstRoute = None
+        self.positionOfSecondRoute = None
+        self.positionOfFirstNode = None
+        self.positionOfSecondNode = None
+        self.moveProfit = 0
 
 
 class CustomerInsertion(object):
@@ -61,22 +118,6 @@ class CustomerInsertionAllPositions(object):
         self.route = None
         self.insertionPosition = None
         self.profit = 0
-
-
-class TwoOptMove(object):
-    def __init__(self):
-        self.positionOfFirstRoute = None
-        self.positionOfSecondRoute = None
-        self.positionOfFirstNode = None
-        self.positionOfSecondNode = None
-        self.moveProfit = None
-
-    def Initialize(self):
-        self.positionOfFirstRoute = None
-        self.positionOfSecondRoute = None
-        self.positionOfFirstNode = None
-        self.positionOfSecondNode = None
-        self.moveProfit = 0
 
 
 class Solver:
@@ -494,9 +535,9 @@ class Solver:
         return dur
 
     def InitializeOperators(self, rm, sm, top): 
-        rm.Initialize()
-        sm.Initialize()
-        top.Initialize()
+        rm.initialize()
+        sm.initialize()
+        top.initialize()
 
     def FindBestTwoOptMove(self, top):
         for rtInd1 in range(0, len(self.sol.routes)):
