@@ -178,7 +178,6 @@ class Solver:
 
     def solve(self):
         for i in range(5000):     #Maybe the range needs change
-            self.SetRoutedFlagToFalseForAllCustomers()
             self.ApplyNearestNeighborMethod(i)
             cc = self.sol.profit
             if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
@@ -214,10 +213,6 @@ class Solver:
             travelled += self.distanceMatrix[A][B]
             travelled += rt.sequenceOfNodes[i + 1].service_time
         return travelled
-
-    def SetRoutedFlagToFalseForAllCustomers(self):
-        for i in range(0, len(self.customers)):
-            self.customers[i].isRouted = False
 
     def ApplyNearestNeighborMethod(self, itr=0):
         modelIsFeasible = True
