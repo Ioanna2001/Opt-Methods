@@ -62,27 +62,26 @@ class SwapMove(object):
     """Represents LocalSearch operation: SwapMove
 
     SwapMove is a 1 - 1 exchange of nodes. Two nodes exchange
-    positions and optionally routes (sequences of nodes).
-
-    Attributes:
-        - positionOfFirstRoute: Route number of first node
-        - positionOfSecondRoute: Route number of second node
-        - positionOfFirstNode: Position number of first node
-        - positionOfSecondNode: Position number of second node
-        - profitChangeFirstRt: Change of first route's total profit, if the exchange is applied
-        - profitChangeSecondRt: Change of second route's total profit, if the exchange is applied
-        - moveProfit: Change in profit earned
-    """
+    positions and optionally routes (sequences of nodes)."""
+    
+    positionOfFirstRoute = None
+    positionOfSecondRoute = None
+    positionOfFirstNode = None
+    positionOfSecondNode = None
+    durChangeFirstRt = None
+    durChangeSecondRt = None
+    moveDur = None
+    
     def __init__(self):
         self.positionOfFirstRoute = None
         self.positionOfSecondRoute = None
         self.positionOfFirstNode = None
         self.positionOfSecondNode = None
-        self.profitChangeFirstRt = None
-        self.profitChangeSecondRt = None
-        self.moveProfit = -1
+        self.durChangeFirstRt = None
+        self.durChangeSecondRt = None
+        self.moveDur = 10**9
 
-    def Initialize(self, rt1, rt2, nd1, nd2, pr1, pr2, mvp):
+    def Initialize(self, rt1, rt2, nd1, nd2, dur1, dur2, mvd):
         """Full constructor
 
         Inits fields to argument values
@@ -100,9 +99,9 @@ class SwapMove(object):
         self.positionOfSecondRoute = rt2
         self.positionOfFirstNode = nd1
         self.positionOfSecondNode = nd2
-        self.profitChangeFirstRt = pr1
-        self.profitChangeSecondRt = pr2
-        self.moveProfit = mvp
+        self.durChangeFirstRt = dur1
+        self.durChangeSecondRt = dur2
+        self.moveDur = mvd
 
 
 class TwoOptMove(object):
@@ -246,42 +245,47 @@ class LocalSearch:
                         b2 = rt2.sequenceOfNodes[secondNodeIndex]
                         c2 = rt2.sequenceOfNodes[secondNodeIndex + 1]
 
-                        moveCost = None
-                        costChangeFirstRoute = None
-                        costChangeSecondRoute = None
+                        moveDur = None
+                        durChangeFirstRoute = None
+                        durChangeSecondRoute = None
 
                         if rt1 == rt2:
                             if firstNodeIndex == secondNodeIndex - 1:
-                                costRemoved = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][b2.id] + \
-                                                self.distanceMatrix[b2.id][c2.id]
-                                costAdded = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][b1.id] + \
-                                            self.distanceMatrix[b1.id][c2.id]
-                                moveCost = costAdded - costRemoved
+                                durRemoved = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][b2.id] + \
+                                                self.distanceMatrix[b2.id][c2.id] 
+                                durAdded = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][b1.id] + \
+                                            self.distanceMatrix[b1.id][c2.id]  
+                                moveDur = durAdded - durRemoved
                             else:
 
-                                costRemoved1 = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][c1.id]
-                                costAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id]
-                                costRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id]
-                                costAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id]
-                                moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2)
+                                durRemoved1 = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][c1.id]
+                                durAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id]
+                                durRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id]
+                                durAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id]
+                                moveDur = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
                         else:
                             if rt1.load - b1.demand + b2.demand > self.constraints['capacity']:
                                 continue
                             if rt2.load - b2.demand + b1.demand > self.constraints['capacity']:
                                 continue
 
-                            costRemoved1 = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][c1.id]
-                            costAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id]
-                            costRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id]
-                            costAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id]
+                            durRemoved1 = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][c1.id] + b1.service_time
+                            durAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id] + b2.service_time
+                            durChangeFirstRoute = durAdded1 - durRemoved1
+                           
+                            if rt1.duration + durChangeFirstRoute > self.constraints['duration']:
+                                continue
+                            durRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id] + b2.service_time
+                            durAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id] + b1.service_time
+                            durChangeSecondRoute = durAdded2 - durRemoved2
 
-                            costChangeFirstRoute = costAdded1 - costRemoved1
-                            costChangeSecondRoute = costAdded2 - costRemoved2
+                            if rt2.duration + durChangeSecondRoute > self.constraints['duration']:
+                                continue
 
-                            moveCost = costAdded1 + costAdded2 - (costRemoved1 + costRemoved2)
-                        if moveCost < self.swapMove.moveCost:
+                            moveDur = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
+                        if moveDur < self.swapMove.moveDur:
                             return SwapMove(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
-                                                costChangeFirstRoute, costChangeSecondRoute, moveCost)
+                                                durChangeFirstRoute, durChangeSecondRoute, moveDur)
 
     def FindBestTwoOptMove(self) -> TwoOptMove:
         for rtInd1 in range(0, len(self.solution.routes)):
