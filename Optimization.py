@@ -359,7 +359,7 @@ class LocalSearch:
 
         sm = self.swapMove
 
-        oldCost = CalculateTotalCost(self.solution)  # TODO Implement inside Utils.py
+        oldDur = CalculateTotalDuration(self.solution)  # TODO Implement inside Utils.py
         rt1 = self.solution.routes[sm.positionOfFirstRoute]
         rt2 = self.solution.routes[sm.positionOfSecondRoute]
         b1 = rt1.sequenceOfNodes[sm.positionOfFirstNode]
@@ -368,18 +368,18 @@ class LocalSearch:
         rt2.sequenceOfNodes[sm.positionOfSecondNode] = b1
 
         if (rt1 == rt2):
-            rt1.cost += sm.moveCost
+            rt1.duration += sm.moveDur
         else:
-            rt1.cost += sm.costChangeFirstRt
-            rt2.cost += sm.costChangeSecondRt
+            rt1.duration += sm.durChangeFirstRt
+            rt2.duration += sm.durChangeSecondRt
             rt1.load = rt1.load - b1.demand + b2.demand
             rt2.load = rt2.load + b1.demand - b2.demand
 
-        self.solution.cost += sm.moveCost
+        self.solution.duration += sm.moveDur
 
-        newCost = CalculateTotalCost(self.solution)  # TODO Implement inside Utils.py
+        newDur = CalculateTotalDuration(self.solution)  # TODO Implement inside Utils.py
         # debuggingOnly
-        if abs((newCost - oldCost) - sm.moveCost) > 0.0001:
+        if abs((newDur - oldDur) - sm.moveDur) > 0.0001:
             print('Cost Issue')
 
     def ApplyTwoOptMove(self): #apply to durations
