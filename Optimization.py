@@ -34,8 +34,8 @@ class RelocationMove(object):
         self.durChangeOriginRt = None
         self.durChangeTargetRt = None
         self.moveDistance = -1
-    
-    def __init__(self, rt1, rt2, nd1, nd2, dur1, dur2, mvd):
+
+    def Initialize(self, rt1, rt2, nd1, nd2, dur1, dur2, mvd):
         """Full constructor
 
         Inits fields to argument values
@@ -56,7 +56,7 @@ class RelocationMove(object):
         self.durChangeOriginRt = dur1
         self.durChangeTargetRt = dur2
         self.moveDistance = mvd
-    
+
 
 class SwapMove(object):
     """Represents LocalSearch operation: SwapMove
@@ -82,7 +82,7 @@ class SwapMove(object):
         self.profitChangeSecondRt = None
         self.moveProfit = -1
 
-    def __init__(self, rt1, rt2, nd1, nd2, pr1, pr2, mvp):
+    def Initialize(self, rt1, rt2, nd1, nd2, pr1, pr2, mvp):
         """Full constructor
 
         Inits fields to argument values
@@ -130,7 +130,7 @@ class TwoOptMove(object):
         self.positionOfSecondNode = None
         self.moveProfit = 0
 
-    def __init__(self, positionOfFirstRoute, positionOfSecondRoute, positionOfFirstNode, positionOfSecondNode, moveProfit):
+    def Initialize(self, positionOfFirstRoute, positionOfSecondRoute, positionOfFirstNode, positionOfSecondNode, moveProfit):
         """Full constructor
 
         Inits fields to argument values
@@ -187,10 +187,10 @@ class LocalSearch:
 
 
     def FindBestRelocationMove(self) -> RelocationMove:
-        for originRouteIndex in range(0, len(self.solution.routes)):
-            rt1: Route = self.solution.routes[originRouteIndex]
-            for targetRouteIndex in range(0, len(self.solution.routes)):
-                rt2: Route = self.solution.routes[targetRouteIndex]
+        for originRouteIndex in range(0, len(self.initialSolution.routes)):
+            rt1: Route = self.initialSolution.routes[originRouteIndex]
+            for targetRouteIndex in range(0, len(self.initialSolution.routes)):
+                rt2: Route = self.initialSolution.routes[targetRouteIndex]
                 for originNodeIndex in range(1, len(rt1.sequenceOfNodes) - 1):
                     for targetNodeIndex in range(0, len(rt2.sequenceOfNodes) - 1):
 
@@ -207,7 +207,7 @@ class LocalSearch:
 
                         if rt1 != rt2:
                             if rt2.load + B.demand > rt2.capacity or \
-                                    rt2.travelled + CalculateRouteDuration(rt2, B) > rt2.duration: #add duration constraint
+                                    rt2.travelled + CalculateRouteDuration(self.distanceMatrix, rt2, B) > rt2.duration: #add duration constraint
                                 continue
 
                         distanceAdded = self.distanceMatrix[A.id][C.id] + self.distanceMatrix[F.id][B.id] + \
@@ -223,7 +223,7 @@ class LocalSearch:
                         moveDistance = distanceAdded - distanceRemoved
 
                         if (moveDistance < self.relocationMove.moveDistance):
-                            return RelocationMove(originRouteIndex, targetRouteIndex, originNodeIndex,
+                            return self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
                                                                 targetRtDurChange, moveDistance)
     
@@ -449,11 +449,11 @@ class LocalSearch:
                     else:
                         self.terminateSearch = True
 
-            TestSolution(self.solution)
+            TestSolution(self.initialSolution)
 
-            if (self.solution.profit > self.optimizedSolution.profit):
-                self.optimizedSolution = copy.deepcopy(self.solution)
+            if (self.initialSolution.profit > self.optimizedSolution.profit):
+                self.optimizedSolution = copy.deepcopy(self.initialSolution)
 
-            localSearchIterator = localSearchIterator + 1
+            self.localSearchIterator = self.localSearchIterator + 1
 
         return self.optimizedSolution

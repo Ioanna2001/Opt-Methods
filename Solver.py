@@ -2,6 +2,7 @@ import random, copy
 
 from Model import *
 from Utils import *
+from Testing import *
 from Optimization import LocalSearch
 
 
@@ -87,12 +88,12 @@ class Solver:
         self.rcl_size = 3
 
     def solve(self):
-        for i in range(5000):  # Maybe the range needs change
+        for i in range(5):  # Maybe the range needs change
             self.ApplyNearestNeighborMethod(i)
             cc = self.sol.profit
             if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
                 self.overallBestSol = copy.deepcopy(self.sol)
-                
+
          #  print(i, 'Constr:', self.sol.profit)
             self.MinimumInsertions(i)
             if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
@@ -106,7 +107,7 @@ class Solver:
 
         self.sol = self.overallBestSol
         print("Overall Best")
-        self.ReportSolution(self.sol)
+        ReportSolution(self.sol)
         return self.sol
 
     def ApplyNearestNeighborMethod(self, itr=0):
@@ -115,7 +116,7 @@ class Solver:
         insertions = 0
         while (insertions < self.vehicles): #Stops when all routes max duration and capacity is reached
             bestInsertion = CustomerInsertion()
-            lastOpenRoute: Route = self.GetLastOpenRoute()
+            lastOpenRoute: Route = GetLastOpenRoute(self.sol)
 
             if lastOpenRoute is not None:
                 self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
@@ -142,7 +143,7 @@ class Solver:
 
         while (insertions < self.vehicles): #Change it to stop when all routes max durations are reached
             bestInsertion = CustomerInsertionAllPositions()
-            lastOpenRoute: Route = self.GetLastOpenRoute()
+            lastOpenRoute: Route = GetLastOpenRoute(self.sol)
 
             if lastOpenRoute is not None:
                 self.IdentifyBestInsertionAllPositions(bestInsertion, lastOpenRoute, itr)
@@ -164,7 +165,7 @@ class Solver:
             print('FeasibilityIssue')
             # reportSolution
 
-        self.TestSolution()
+        TestSolution(self.sol)
 
     def IdentifyBest_NN_ofLastVisited(self, bestInsertion, rt, itr=10):
         random.seed(itr)
@@ -174,7 +175,7 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 if rt.load + candidateCust.demand <= rt.capacity:
-                    if self.CalculateRouteDuration(rt, candidateCust) + rt.travelled <= rt.duration:
+                    if CalculateRouteDuration(self.distanceMatrix, rt, candidateCust) + rt.travelled <= rt.duration:
                         lastNodePresentInTheRoute = rt.sequenceOfNodes[-2] #check if candidates duration fits
                         trialProfit = candidateCust.profit
                         # Update rcl list
@@ -205,7 +206,7 @@ class Solver:
         profitAdded = insCustomer.profit 
         rt.profit += profitAdded
         self.sol.profit += profitAdded
-        rt.travelled = self.CalculateTravelledTime(rt)
+        rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         rt.load += insCustomer.demand
         insCustomer.isRouted = True
 
@@ -216,7 +217,7 @@ class Solver:
             candidateCust: Node = self.customers[i]
             if candidateCust.isRouted is False:
                 if rt.load + candidateCust.demand <= rt.capacity:
-                    if self.CalculateRouteDuration(rt, candidateCust) + rt.travelled <= rt.duration:
+                    if CalculateRouteDuration(self.distanceMatrix, rt, candidateCust) + rt.travelled <= rt.duration:
                         for j in range(0, len(rt.sequenceOfNodes) - 1):
                             trialProfit = candidateCust.profit
 
@@ -246,6 +247,6 @@ class Solver:
         rt.profit += insertion.profit
         self.sol.profit += insertion.profit
         rt.load += insCustomer.demand
-        rt.travelled = self.CalculateTravelledTime(rt)
+        rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
