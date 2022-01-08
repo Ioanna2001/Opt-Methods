@@ -177,7 +177,7 @@ class Solver:
         self.rcl_size = 3
 
     def solve(self):
-        for i in range(5000):     #Maybe the range needs change
+        for i in range(5):     #Maybe the range needs change
             self.SetRoutedFlagToFalseForAllCustomers()
             self.ApplyNearestNeighborMethod(i)
             cc = self.sol.profit
