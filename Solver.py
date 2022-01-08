@@ -69,14 +69,8 @@ class Solver:
         - capacity: Max capacity of vehicles
         - duration: Max available time for customer service
         - vehicles: Available vehicles
-<<<<<<< HEAD
         - sol: current `Solution`
-        - bestSolution: best `Solution`
         - overallBestSol: Overall best `Solution`
-=======
-        - sol: List of routes, representing current solution
-        - overallBestSol: List of routes, representing overall best solution
->>>>>>> solution-classes
         - rcl_size: Number of elements to be used in restricted candidate list
     """
 
