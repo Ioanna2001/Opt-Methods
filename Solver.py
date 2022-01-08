@@ -69,14 +69,8 @@ class Solver:
         - capacity: Max capacity of vehicles
         - duration: Max available time for customer service
         - vehicles: Available vehicles
-<<<<<<< HEAD
         - sol: current `Solution`
-        - bestSolution: best `Solution`
         - overallBestSol: Overall best `Solution`
-=======
-        - sol: List of routes, representing current solution
-        - overallBestSol: List of routes, representing overall best solution
->>>>>>> solution-classes
         - rcl_size: Number of elements to be used in restricted candidate list
     """
 
@@ -255,4 +249,21 @@ class Solver:
         rt.load += insCustomer.demand
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
+
+    def ClarkWright(self):
+        routes = []
+        for c in self.customers:
+            route = Route()
+            route.sequenceOfNodes.insert(1, c)
+            route.load = c.demand
+            route.travelled = CalculateRouteDuration(self.distanceMatrix, route, c)
+            routes.append(route)
+        savings = {}
+        for i in self.customers:
+            for j in self.customers:
+                distanceRemoved = self.distanceMatrix[0][i] +self.distanceMatrix[j][0]
+                distanceAdded = self.distanceMatrix[i][j]
+                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
+
+
 
