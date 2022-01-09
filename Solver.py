@@ -1,4 +1,5 @@
-import random, copy
+import random, copy, itertools
+from typing import List
 
 from Model import *
 from Utils import *
@@ -74,7 +75,7 @@ class Solver:
         - rcl_size: Number of elements to be used in restricted candidate list
     """
 
-    def __init__(self, m):
+    def __init__(self, m: Model):
         self.allNodes = m.allNodes
         self.customers = m.customers
         self.depot = m.allNodes[0]
@@ -250,20 +251,66 @@ class Solver:
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
-    def ClarkWright(self):
+    def ClarkeWright(self):
+
+        # Create routes for each customer
         routes = []
         for c in self.customers:
-            route = Route()
-            route.sequenceOfNodes.insert(1, c)
+            route = Route(self.depot, self.capacity, self.duration)
+            route.sequenceOfNodes.insert(1, c) 
             route.load = c.demand
             route.travelled = CalculateRouteDuration(self.distanceMatrix, route, c)
             routes.append(route)
+
+        # Create savings matrix
         savings = {}
         for i in self.customers:
             for j in self.customers:
                 distanceRemoved = self.distanceMatrix[0][i] +self.distanceMatrix[j][0]
                 distanceAdded = self.distanceMatrix[i][j]
-                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
+                savings[(i, j)] = distanceAdded - distanceRemoved
 
+        # Create list of savings' references 
+        rankedSavings = [customers for customers in itertools.combinations(self.customers)]
+        # put savings in descending order
+        rankedSavings = sorted(savings.items(), key=lambda nodes: savings[nodes], reverse=True)
 
+        # Clarke & Wright Algorithm
+        for i, j in rankedSavings:
+            if self.ClarkeWrightConditions(routes, i, j):
+                pass
 
+    def ClarkeWrightConditions(routes: list[Route], i: Node, j: Node) -> bool:
+        
+        # Find routes where i and j are included
+        for route in routes:
+            if i in route:
+                rt1 = route
+            elif j in route:
+                rt2 = route
+        
+        # Check if i and j are in the same route
+        if rt1 == rt2:
+            return False
+
+        # Check if i and j are either at the start or at
+        # the end of their routes
+        nodeInd1 = rt1.index(i)
+        if nodeInd1 != 1 and nodeInd1 != rt1[-2]:
+            return False
+        
+        nodeInd2 = rt2.index(j)
+        if nodeInd2 != 1 and nodeInd2 != rt2[-2]:
+            return False
+        
+        # Check for capacity violation
+        if CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
+            return False
+
+        # Check for time violation
+
+        # All conditions so far are met
+        return True  
+        
+        
+            
