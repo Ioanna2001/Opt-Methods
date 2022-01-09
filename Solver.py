@@ -1,4 +1,4 @@
-import random, copy
+import random, copy, collections
 
 from Model import *
 from Utils import *
@@ -89,6 +89,7 @@ class Solver:
 
     def solve(self):
         for i in range(5):  # Maybe the range needs change
+            self.ClarkWright()
             self.ApplyNearestNeighborMethod(i)
             cc = self.sol.profit
             if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
@@ -253,17 +254,18 @@ class Solver:
     def ClarkWright(self):
         routes = []
         for c in self.customers:
-            route = Route()
+            route = Route(self.depot, self.capacity, self.duration)
             route.sequenceOfNodes.insert(1, c)
             route.load = c.demand
             route.travelled = CalculateRouteDuration(self.distanceMatrix, route, c)
             routes.append(route)
         savings = {}
-        for i in self.customers:
-            for j in self.customers:
-                distanceRemoved = self.distanceMatrix[0][i] +self.distanceMatrix[j][0]
+        for i in range(1, len(self.customers) - 1):
+            for j in range(i + 1, len(self.customers)):
+                distanceRemoved = self.distanceMatrix[0][i] + self.distanceMatrix[j][0]
                 distanceAdded = self.distanceMatrix[i][j]
-                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
+                savings[(i, j)] = distanceAdded - distanceRemoved
+        sorted_saving = collections.OrderedDict(savings)
 
 
 
