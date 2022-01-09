@@ -1,5 +1,9 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 import random, copy, collections
+=======
+import random, copy
+>>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
 =======
 import random, copy
 >>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
@@ -269,8 +273,12 @@ class Solver:
                 distanceRemoved = self.distanceMatrix[0][i] + self.distanceMatrix[j][0]
                 distanceAdded = self.distanceMatrix[i][j]
 <<<<<<< HEAD
+<<<<<<< HEAD
                 savings[(i, j)] = distanceAdded - distanceRemoved
         sorted_saving = collections.OrderedDict(savings)
+=======
+                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
+>>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
 =======
                 savings[{i.id, j.id}] = distanceAdded - distanceRemoved
 >>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
