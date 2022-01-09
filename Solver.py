@@ -1,16 +1,4 @@
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-import random, copy, collections
-=======
 import random, copy
->>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
-=======
-import random, copy
->>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
-=======
-import random, copy
->>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
 
 from Model import *
 from Utils import *
