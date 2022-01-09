@@ -1,7 +1,7 @@
 import copy
 
 from Testing import TestSolution
-from Model import Route
+from Model import (Route, Node)
 from Utils import (CalculateRouteDuration, CalculateTravelledTime, CalculateTotalDuration,
                         UpdateRouteCostAndLoad, CapacityIsViolated)
 
@@ -215,9 +215,9 @@ class LocalSearch:
                                         self.distanceMatrix[F.id][G.id]
 
                         originRtDurChange = self.distanceMatrix[A.id][C.id] - self.distanceMatrix[A.id][B.id] - \
-                                                self.distanceMatrix[B.id][C.id]
+                                                self.distanceMatrix[B.id][C.id] - B.service_time
                         targetRtDurChange = self.distanceMatrix[F.id][B.id] + self.distanceMatrix[B.id][G.id] - \
-                                                self.distanceMatrix[F.id][G.id]
+                                                self.distanceMatrix[F.id][G.id] + B.service_time
 
                         moveDistance = distanceAdded - distanceRemoved
 
