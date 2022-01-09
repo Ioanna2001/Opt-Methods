@@ -1,6 +1,10 @@
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 import random, copy, collections
+=======
+import random, copy
+>>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
 =======
 import random, copy
 >>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
@@ -259,29 +263,69 @@ class Solver:
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
-    def ClarkWright(self):
+class SavingsObject():
+    def __init__(self):
+        self.i = None
+        self.j = None
+        self.distanceSaved = 0
+
+    def ClarkeWright(self):
+
+        # Create routes for each customer
         routes = []
         for c in self.customers:
             route = Route()
             route.sequenceOfNodes.insert(1, c)
+            route = Route(self.depot, self.capacity, self.duration)
+            route.sequenceOfNodes.insert(1, c)
             route.load = c.demand
             route.travelled = CalculateRouteDuration(self.distanceMatrix, route, c)
             routes.append(route)
-        savings = {}
-        for i in range(1, len(self.customers) - 1):
+
+        # Create savings matrix
+        savings = []
+        for i in range(len(self.customers) - 1):
             for j in range(i + 1, len(self.customers)):
                 distanceRemoved = self.distanceMatrix[0][i] + self.distanceMatrix[j][0]
                 distanceAdded = self.distanceMatrix[i][j]
-<<<<<<< HEAD
-<<<<<<< HEAD
-                savings[(i, j)] = distanceAdded - distanceRemoved
-        sorted_saving = collections.OrderedDict(savings)
-=======
-                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
->>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
-=======
-                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
->>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
+                s = SavingsObject()
+                s.i = self.customers[i]
+                s.j = self.customers[j]
+                s.distanceSaved = distanceAdded - distanceRemoved
+                savings.append(s)
+        savings.sort()
+
+    def ClarkeWrightConditions(routes: list[Route], i: Node, j: Node) -> bool:
+
+        # Find routes where i and j are included
+        for route in routes:
+            if i in route:
+                rt1 = route
+            elif j in route:
+                rt2 = route
+
+        # Check if i and j are in the same route
+        if rt1 == rt2:
+            return False
+
+        # Check if i and j are either at the start or at
+        # the end of their routes
+        nodeInd1 = rt1.index(i)
+        if nodeInd1 != 1 and nodeInd1 != rt1[-2]:
+            return False
+
+        nodeInd2 = rt2.index(j)
+        if nodeInd2 != 1 and nodeInd2 != rt2[-2]:
+            return False
+
+        # Check for capacity violation
+        if CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
+            return False
+
+        # Check for time violation
+
+        # All conditions so far are met
+        return True
 
 
 
