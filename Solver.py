@@ -1,4 +1,8 @@
+<<<<<<< HEAD
 import random, copy, collections
+=======
+import random, copy
+>>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
 
 from Model import *
 from Utils import *
@@ -74,7 +78,7 @@ class Solver:
         - rcl_size: Number of elements to be used in restricted candidate list
     """
 
-    def __init__(self, m: Model):
+    def __init__(self, m):
         self.allNodes = m.allNodes
         self.customers = m.customers
         self.depot = m.allNodes[0]
@@ -251,25 +255,25 @@ class Solver:
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
-    def ClarkeWright(self):
-
-        # Create routes for each customer
+    def ClarkWright(self):
         routes = []
         for c in self.customers:
-            route = Route(self.depot, self.capacity, self.duration)
-            route.sequenceOfNodes.insert(1, c) 
+            route = Route()
+            route.sequenceOfNodes.insert(1, c)
             route.load = c.demand
             route.travelled = CalculateRouteDuration(self.distanceMatrix, route, c)
             routes.append(route)
-
-        # Create savings matrix
         savings = {}
         for i in range(1, len(self.customers) - 1):
             for j in range(i + 1, len(self.customers)):
                 distanceRemoved = self.distanceMatrix[0][i] + self.distanceMatrix[j][0]
                 distanceAdded = self.distanceMatrix[i][j]
+<<<<<<< HEAD
                 savings[(i, j)] = distanceAdded - distanceRemoved
         sorted_saving = collections.OrderedDict(savings)
+=======
+                savings[{i.id, j.id}] = distanceAdded - distanceRemoved
+>>>>>>> parent of 2230256 ([WIP] Add Clarke & Wright algorithm)
 
 
 
