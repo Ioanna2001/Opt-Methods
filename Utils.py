@@ -41,20 +41,6 @@ def CalculateTravelledTime(distanceMatrix: list[int], rt: Route) -> float:
         travelled += rt.sequenceOfNodes[i + 1].service_time
     return travelled
 
-def ReportSolution(solution):
-    print("Best solution")
-    for i in range(0, len(solution.routes)):
-        rt = solution.routes[i]
-        print("Route " + str(i))
-        print("load: " + str(rt.load))
-        print("duration: " + str(rt.travelled))
-        for j in range(0, len(rt.sequenceOfNodes)):
-            print(rt.sequenceOfNodes[j].id, end=' ')
-        print("Route profit")
-        print(rt.profit)
-    print("Total profit")
-    print(solution.profit)
-
 def GetLastOpenRoute(solution) -> int:
     if len(solution.routes) == 0:
         return None
