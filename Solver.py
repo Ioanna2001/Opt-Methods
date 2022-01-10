@@ -291,7 +291,7 @@ class Solver:
                 s.j = self.customers[j]
                 s.distanceSaved = distanceAdded - distanceRemoved
                 savings.append(s)
-        savings.sort(key=lambda x:x.distanceSaved)
+        savings.sort(key=lambda x:x.distanceSaved, reverse=True)
 
         for s in savings:
             if s.distanceSaved <= 0:
