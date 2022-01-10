@@ -25,3 +25,6 @@ MANIFEST
 
 # Pycharm configuration files
 .idea/
+
+# Plot pngs
+*.png

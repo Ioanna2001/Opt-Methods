@@ -1,4 +1,4 @@
-import random, copy
+import random, itertools
 
 from Model import *
 from Utils import *
@@ -73,6 +73,11 @@ class SavingsObject():
         self.j = None
         self.distanceSaved = 0
 
+    def __init__(self, i, j, distanceSaved):
+        self.i = i
+        self.j = j
+        self.distanceSaved = distanceSaved
+
 class Solver:
     """Class to solve built problem model
 
@@ -125,7 +130,7 @@ class Solver:
         self.sol = self.overallBestSol
         """
         print("Overall Best")
-        ReportSolution(self.sol)
+        ReportSolution(self.sol, self.allNodes)
         return self.sol
 
     def ApplyNearestNeighborMethod(self, itr=0):
@@ -270,57 +275,74 @@ class Solver:
 
     def ClarkeWright(self):
         self.sol = Solution()
+
         # Create routes for each customer
-        routes = []
+        routes: list[Route] = []
         for c in self.customers:
             route = Route(self.depot, self.capacity, self.duration)
-            route.sequenceOfNodes.insert(1, c)
             route.sequenceOfNodes.insert(1, c)
             route.load = c.demand
             route.travelled = CalculateTravelledTime(self.distanceMatrix, route)
             routes.append(route)
 
+        # Create cost matrix
+        costs = {}
+        for pair in itertools.combinations(self.allNodes, 2):
+            a: Node = pair[0]
+            b: Node = pair[1]
+            dist = math.sqrt(math.pow(a.x - b.x, 2) + math.pow(a.y - b.y, 2))
+            costs[pair] = dist  # TODO Test alternatives
+
         # Create savings matrix
         savings = []
-        for i in range(len(self.customers) - 1):
-            for j in range(i + 1, len(self.customers)):
-                distanceRemoved = self.distanceMatrix[0][i] + self.distanceMatrix[j][0]
-                distanceAdded = self.distanceMatrix[i][j]
-                s = SavingsObject()
-                s.i = self.customers[i]
-                s.j = self.customers[j]
-                s.distanceSaved = distanceAdded - distanceRemoved
-                savings.append(s)
+        for pair in itertools.combinations(self.customers, 2):
+            i = pair[0]
+            j = pair[1]
+            costAdded = costs[self.depot, i] + costs[self.depot, j]
+            costRemoved = costs[i, j]
+            s = SavingsObject(i, j, costAdded - costRemoved)
+            savings.append(s)
         savings.sort(key=lambda x:x.distanceSaved, reverse=True)
 
         for s in savings:
-            if s.distanceSaved <= 0:
-                #checks if routes of SavingsOnject can be merged
-                if ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
-                    #first node
-                    i = s.i
-                    #last node
-                    j = s.j
-                    for r in range(len(routes)):
-                        if i in routes[r].sequenceOfNodes:
-                            rt1Ind = r
-                        elif j in routes[r].sequenceOfNodes:
-                            rt2Ind = r
-                    #remove one of the unmerged routes
-                    rt2 = routes.pop(rt2Ind)
-                    #remove depot
-                    rt2.sequenceOfNodes.pop(0)
-                    #remove depot
-                    routes[rt1Ind].sequenceOfNodes.pop(-1)
-                    #merge routes
-                    routes[rt1Ind].sequenceOfNodes.extend(rt2.sequenceOfNodes)
-                    routes[rt1Ind].load += rt2.load
-                    routes[rt1Ind].travelled = CalculateTravelledTime(self.distanceMatrix, routes[rt1Ind])
-        routesWithProfit = []
+            # fist node
+            i = s.i
+            # second node
+            j = s.j
+
+            # Check if routes of SavingsObject can be merged
+            if not ClarkeWrightConditions(self.distanceMatrix, routes, i, j):
+                continue
+
+            # Find routes of nodes
+            for r in routes:
+                if i in r.sequenceOfNodes:
+                    rt1: Route = r
+                elif j in r.sequenceOfNodes:
+                    rt2: Route = r
+
+            # Figure out which node should go first
+            if rt2.sequenceOfNodes[1] != j and rt1.sequenceOfNodes[-2] != i:
+                # swap nodes
+                i, j = j, i
+                # swap routes
+                rt1, rt2 = rt2, rt1
+
+            # Remove route to be merged
+            routes.remove(rt2)
+            # Remove depot from second route
+            rt2.sequenceOfNodes.pop(0)
+            # Remove depot from first route
+            rt1.sequenceOfNodes.pop(-1)
+            #merge routes
+            rt1.sequenceOfNodes.extend(rt2.sequenceOfNodes)
+            rt1.load += rt2.load
+            rt1.travelled = CalculateTravelledTime(self.distanceMatrix, rt1)
+
+        # Calculate profit foreach route
         for r in routes:
             r.profit = CalculateRouteProfit(r)
         routes.sort(key=lambda x:x.profit, reverse=True)
-        sol = list()
         for i in range(0, 6):
             self.sol.routes.append(routes[i])
             self.sol.profit += routes[i].profit
