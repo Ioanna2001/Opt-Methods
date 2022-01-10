@@ -37,8 +37,8 @@ def ReportSolution(solution, allNodes):
 
 class SolDrawer:
     @staticmethod
-    def get_cmap(n, name='hsv'):
-        return plt.cm.get_cmap(name, n)
+    def get_cmap(n):
+        return plt.cm.get_cmap(name=None, lut=n)
 
     @staticmethod
     def draw(name, sol, nodes):
@@ -55,11 +55,11 @@ class SolDrawer:
             n = nodes[i]
             x.append(n.x)
             y.append(n.y)
-        plt.scatter(x, y, c="blue")
+        plt.scatter(x, y, c="grey", marker='.')
 
     @staticmethod
     def drawRoutes(sol):
-        cmap = SolDrawer.get_cmap(len(sol.routes))
+        cmap = SolDrawer.get_cmap(n=len(sol.routes))
         if sol is not None:
             for r in range(0, len(sol.routes)):
                 rt = sol.routes[r]
