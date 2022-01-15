@@ -47,11 +47,11 @@ def GetLastOpenRoute(solution) -> int:
     else:
         return solution.routes[-1]
 
-def CalculateTotalDuration(solution) -> float:
+def CalculateTotalDuration(distanceMatrix, solution) -> float:
     dur = 0.0
     for i in range(0, len(solution.routes)):
         rt = solution.routes[i]
-        dur += CalculateTravelledTime(rt)
+        dur += CalculateTravelledTime(distanceMatrix, rt)
     return dur
 
 def UpdateRouteCostAndLoad(distanceMatrix: list[int], rt: Route): # update root duration

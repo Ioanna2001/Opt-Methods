@@ -129,7 +129,7 @@ class Solver:
 
         self.sol = self.overallBestSol
         """
-        self.sol.duration = CalculateTotalDuration(self.sol)
+        self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
         print("Overall Best")
         ReportSolution(self.overallBestSol, self.allNodes)
         return self.sol
@@ -341,14 +341,14 @@ class Solver:
             rcl: list[SavingsObject] = []
             for s in savings:
 
-            # Check if routes of SavingsObject can be merged
-            if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
-                continue
-            else:
-                rcl.append(s)
+                # Check if routes of SavingsObject can be merged
+                if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
+                    continue
+                else:
+                    rcl.append(s)
 
-            if len(rcl) == rcl_size:
-                break
+                if len(rcl) == rcl_size:
+                    break
 
 
             if len(rcl) > 0:
