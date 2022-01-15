@@ -461,3 +461,5 @@ class LocalSearch:
             self.localSearchIterator = self.localSearchIterator + 1
 
         return self.optimizedSolution
+
+#def NeighbourhoodChange(s, ss, k):

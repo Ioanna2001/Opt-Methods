@@ -16,6 +16,7 @@ class Solution:
     """
     def __init__(self):
         self.profit = 0.0
+        self.duration = 0.0
         self.routes = []
 
 
@@ -131,6 +132,7 @@ class Solver:
 
         self.sol = self.overallBestSol
         """
+        self.sol.duration = CalculateTotalDuration(self.sol)
         print("Overall Best")
         ReportSolution(self.overallBestSol, self.allNodes)
         return self.sol
@@ -232,6 +234,7 @@ class Solver:
         rt.sequenceOfNodes.insert(insIndex + 1, insCustomer)
         rt.profit += insertion.profit
         self.sol.profit += insertion.profit
+        self.sol.duration = CalculateTotalDuration(self.sol)
         rt.load += insCustomer.demand
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
@@ -277,14 +280,14 @@ class Solver:
             rcl: list[SavingsObject] = []
         for s in savings:
 
-                # Check if routes of SavingsObject can be merged
-                if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
-                    continue
-                else:
-                    rcl.append(s)
+            # Check if routes of SavingsObject can be merged
+            if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
+                continue
+            else:
+                rcl.append(s)
 
-                if len(rcl) == rcl_size:
-                    break
+            if len(rcl) == rcl_size:
+                break
 
             if len(rcl) > 0:
                 # Get random saving from Rcl
