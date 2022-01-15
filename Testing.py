@@ -1,4 +1,4 @@
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 
 from Model import Route
 
@@ -32,7 +32,7 @@ def ReportSolution(solution, allNodes):
         for j in range(0, len(rt.sequenceOfNodes)):
             print(rt.sequenceOfNodes[j].id, end=' ')
         print("\nRoute profit:", rt.profit)
-    SolDrawer.draw('ClarkeWright', solution, allNodes)
+ #   SolDrawer.draw('ClarkeWright', solution, allNodes)
     print("Total profit:", solution.profit)
 
 class SolDrawer:

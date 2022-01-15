@@ -481,7 +481,7 @@ s: Initial solution
 ss: test solution
 k: operator index 
 '''
-def NeighbourhoodChange(s: Solution, ss: Solution, k: int):
+def NeighbourhoodChange(s, ss, k: int):
     if ss.duration < s.duration:
         s = copy.deepcopy(ss)
         k = 0
@@ -496,7 +496,7 @@ Parameters:
 s: initial solution
 k: local search operator
 '''
-def Shake(s: Solution, k: int, distanceMatrix):
+def Shake(s, k: int, distanceMatrix):
     ls = LocalSearch(s, distanceMatrix, None, k)
     ls.run()
     solutions = None
@@ -525,7 +525,7 @@ s: initial solution
 distanceMatrix: distance matrix for all nodes
 k: local search operator
 '''
-def BestImprovement(s: Solution, distanceMatrix, k: int):
+def BestImprovement(s, distanceMatrix, k: int):
     condition = True
     while (condition):
         ss = copy.deepcopy(s)
@@ -544,7 +544,7 @@ s: initial solution
 kmax: count of local search operators
 distanceMatrix: distance matrix for all nodes 
 '''
-def VNS(s: Solution, kmax: int, distanceMatrix):
+def VNS(s, kmax: int, distanceMatrix):
     k = 0
     condition = True
     while (condition):

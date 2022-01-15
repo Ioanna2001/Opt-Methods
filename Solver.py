@@ -106,32 +106,38 @@ class Solver:
         self.rcl_size = 1
 
     def solve(self):
-        #for i in range(1, 6):  # Maybe the range needs change
+        '''
         self.ClarkeWrightPaessens()
         if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
             self.overallBestSol = copy.deepcopy(self.sol)
+        '''
+        self.ApplyNearestNeighborMethod()
+        cc = self.sol.profit
+        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
+            self.overallBestSol = copy.deepcopy(self.sol)
         """
-            self.ApplyNearestNeighborMethod(i)
-            cc = self.sol.profit
-            if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-                self.overallBestSol = copy.deepcopy(self.sol)
-
-         #  print(i, 'Constr:', self.sol.profit)
-            self.MinimumInsertions(i)
-            if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-                self.overallBestSol = copy.deepcopy(self.sol)
-         #   self.ReportSolution(self.sol)
-            optimize = LocalSearch(self.sol, self.distanceMatrix, self.constraints, operator=0)
-            self.sol = optimize.run()
-            if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-                self.overallBestSol = copy.deepcopy(self.sol)
-        #    print(i, 'Const: ', cc, ' LS:', self.sol.profit, 'BestOverall: ', self.overallBestSol.profit)
+     #  print(i, 'Constr:', self.sol.profit)
+        self.MinimumInsertions(i)
+        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
+            self.overallBestSol = copy.deepcopy(self.sol)
+     #   self.ReportSolution(self.sol)
+        optimize = LocalSearch(self.sol, self.distanceMatrix, self.constraints, operator=0)
+        self.sol = optimize.run()
+        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
+            self.overallBestSol = copy.deepcopy(self.sol)
+    #    print(i, 'Const: ', cc, ' LS:', self.sol.profit, 'BestOverall: ', self.overallBestSol.profit)
 
         self.sol = self.overallBestSol
         """
+
+        self.ClarkeWrightPaessens()
+        print("Clarke-Wirght paessens")
+        ReportSolution(self.sol, self.allNodes)
+        print("Nearest neigbor")
         self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
-        print("Overall Best")
-        ReportSolution(self.overallBestSol, self.allNodes)
+        ReportSolution(self.sol, self.allNodes)
+       # print("Overall Best")
+       # ReportSolution(self.overallBestSol, self.allNodes)
         return self.sol
 
     def MinimumInsertions(self, itr):
@@ -165,7 +171,7 @@ class Solver:
 
         TestSolution(self.sol)
 
-    def IdentifyBest_NN_ofLastVisited(self, bestInsertion, rt, itr=10):
+    def IdentifyBest_NN_ofLastVisited(self, bestInsertion, rt, itr=20):
         random.seed(itr)
         rcl = []
         #the rcl list holds the 3 NearestNeighbor nodes with the best profit
@@ -175,15 +181,15 @@ class Solver:
                 if rt.load + candidateCust.demand <= rt.capacity:
                     if CalculateRouteDuration(self.distanceMatrix, rt, candidateCust) + rt.travelled <= rt.duration:
                         lastNodePresentInTheRoute = rt.sequenceOfNodes[-2] #check if candidates duration fits
-                        trialProfit = candidateCust.profit
+                        trialProfit = candidateCust.profit/CalculateRouteDuration(self.distanceMatrix, rt, candidateCust)
                         # Update rcl list
                         if len(rcl) < self.rcl_size:
                             new_tup = (trialProfit, candidateCust, rt)
                             rcl.append(new_tup)
                             #rcl[-1] holds the NN node with the best profit so far
                             rcl.sort(key=lambda x: x[0])
-                        elif trialProfit > rcl[-1][0]:
-                            rcl.pop(len(rcl) - 1)
+                        elif trialProfit > rcl[0][0]:
+                            rcl.pop(0)
                             new_tup = (trialProfit, candidateCust, rt)
                             rcl.append(new_tup)
                             rcl.sort(key=lambda x: x[0])
@@ -194,6 +200,40 @@ class Solver:
             bestInsertion.profit = tpl[0] 
             bestInsertion.customer = tpl[1]
             bestInsertion.route = tpl[2]
+
+    def ApplyNearestNeighborMethod(self, itr=30):
+        modelIsFeasible = True
+        self.sol = Solution()
+        insertions = 0
+        while (insertions <= self.vehicles):  # Stops when all routes max duration and capacity is reached
+            bestInsertion = CustomerInsertion()
+            lastOpenRoute: Route = GetLastOpenRoute(self.sol)
+            if lastOpenRoute is not None:
+                self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
+            if (bestInsertion.customer is not None):
+                self.ApplyCustomerInsertion(bestInsertion)
+            else:
+                # If there is an empty available route
+                if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
+                    modelIsFeasible = False
+                    break
+                else:
+                    rt = Route(self.depot, self.capacity, self.duration)
+                    self.sol.routes.append(rt)
+                    insertions += 1
+
+    def ApplyCustomerInsertion(self, insertion):
+        insCustomer = insertion.customer
+        rt = insertion.route
+        # before the second depot occurrence
+        insIndex = len(rt.sequenceOfNodes) - 1
+        rt.sequenceOfNodes.insert(insIndex, insCustomer)
+        profitAdded = insCustomer.profit
+        rt.profit += profitAdded
+        self.sol.profit += profitAdded
+        rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
+        rt.load += insCustomer.demand
+        insCustomer.isRouted = True
 
     def IdentifyBestInsertionAllPositions(self, bestInsertion, rt, itr=10):
         random.seed(itr)
