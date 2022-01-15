@@ -1,4 +1,4 @@
-import random, itertools
+import random, itertools, copy
 
 from Model import *
 from Utils import *
@@ -95,21 +95,23 @@ class Solver:
     """
 
     def __init__(self, m):
-        self.allNodes = m.allNodes
-        self.customers = m.customers
-        self.depot = m.allNodes[0]
+        self.allNodes: list[Node] = m.allNodes
+        self.customers: list[Node] = m.customers
+        self.depot: Node = m.allNodes[0]
         self.distanceMatrix = m.distances
         self.capacity = int(m.max_capacity)
         self.duration = int(m.max_duration)
         self.vehicles = int(m.vehicles)
         self.constraints = {"capacity": self.capacity, "duration": self.duration, "vehicles": self.vehicles}
-        self.sol = None
-        self.overallBestSol = None
-        self.rcl_size = 3
+        self.sol: Solution = None
+        self.overallBestSol: Solution = None
+        self.rcl_size = 1
 
     def solve(self):
-        #for i in range(5):  # Maybe the range needs change
+        #for i in range(1, 6):  # Maybe the range needs change
         self.ClarkeWright()
+        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
+            self.overallBestSol = copy.deepcopy(self.sol)
         """
             self.ApplyNearestNeighborMethod(i)
             cc = self.sol.profit
@@ -130,34 +132,8 @@ class Solver:
         self.sol = self.overallBestSol
         """
         print("Overall Best")
-        ReportSolution(self.sol, self.allNodes)
+        ReportSolution(self.overallBestSol, self.allNodes)
         return self.sol
-
-    def ApplyNearestNeighborMethod(self, itr=0):
-        modelIsFeasible = True
-        self.sol = Solution()
-        insertions = 0
-        while (insertions < self.vehicles): #Stops when all routes max duration and capacity is reached
-            bestInsertion = CustomerInsertion()
-            lastOpenRoute: Route = GetLastOpenRoute(self.sol)
-
-            if lastOpenRoute is not None:
-                self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
-            if (bestInsertion.customer is not None):
-                    self.ApplyCustomerInsertion(bestInsertion)
-            else:
-                # If there is an empty available route
-                if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
-                    modelIsFeasible = False
-                    break
-                else:
-                    rt = Route(self.depot, self.capacity, self.duration)
-                    self.sol.routes.append(rt)
-                    insertions += 1
-
-        if (modelIsFeasible == False):
-            print('FeasibilityIssue')
-            # reportSolution
 
     def MinimumInsertions(self, itr):
         modelIsFeasible = True
@@ -220,19 +196,6 @@ class Solver:
             bestInsertion.customer = tpl[1]
             bestInsertion.route = tpl[2]
 
-    def ApplyCustomerInsertion(self, insertion):
-        insCustomer = insertion.customer
-        rt = insertion.route
-        # before the second depot occurrence
-        insIndex = len(rt.sequenceOfNodes) - 1
-        rt.sequenceOfNodes.insert(insIndex, insCustomer)
-        profitAdded = insCustomer.profit 
-        rt.profit += profitAdded
-        self.sol.profit += profitAdded
-        rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
-        rt.load += insCustomer.demand
-        insCustomer.isRouted = True
-
     def IdentifyBestInsertionAllPositions(self, bestInsertion, rt, itr=10):
         random.seed(itr)
         rcl = []
@@ -273,8 +236,10 @@ class Solver:
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
-    def ClarkeWright(self):
+    def ClarkeWright(self, itr=1, rcl_size=1):
+        print("Loop: ", itr)
         self.sol = Solution()
+        rng = random.Random(itr * 10)
 
         # Create routes for each customer
         routes: list[Route] = []
@@ -283,36 +248,58 @@ class Solver:
             route.sequenceOfNodes.insert(1, c)
             route.load = c.demand
             route.travelled = CalculateTravelledTime(self.distanceMatrix, route)
+            route.profit = c.profit
             routes.append(route)
 
         # Create cost matrix
-        costs = {}
+        profitChange = {}
         for pair in itertools.combinations(self.allNodes, 2):
             a: Node = pair[0]
             b: Node = pair[1]
             dist = math.sqrt(math.pow(a.x - b.x, 2) + math.pow(a.y - b.y, 2))
-            costs[pair] = dist  # TODO Test alternatives
+            profitChange[pair] = b.profit / dist + b.service_time  # TODO Test alternatives
 
         # Create savings matrix
         savings = []
         for pair in itertools.combinations(self.customers, 2):
             i = pair[0]
             j = pair[1]
-            costAdded = costs[self.depot, i] + costs[self.depot, j]
-            costRemoved = costs[i, j]
-            s = SavingsObject(i, j, costAdded - costRemoved)
+            profitRemoved = profitChange[self.depot, i] + profitChange[self.depot, j]
+            profitAdded = profitChange[i, j]
+            s = SavingsObject(i, j, profitAdded - profitRemoved)
             savings.append(s)
         savings.sort(key=lambda x:x.distanceSaved, reverse=True)
 
+        
+        while savings:
+
+            # Create rcl
+            rcl: list[SavingsObject] = []
         for s in savings:
+
+                # Check if routes of SavingsObject can be merged
+                if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
+                    continue
+                else:
+                    rcl.append(s)
+
+                if len(rcl) == rcl_size:
+                    break
+
+            if len(rcl) > 0:
+                # Get random saving from Rcl
+                randomIndex = rng.randint(0, len(rcl) - 1)
+            else:
+                # No feasible nodes left
+                break
+
+            s = rcl[randomIndex]
+            savings.remove(s)
+
             # fist node
             i = s.i
             # second node
             j = s.j
-
-            # Check if routes of SavingsObject can be merged
-            if not ClarkeWrightConditions(self.distanceMatrix, routes, i, j):
-                continue
 
             # Find routes of nodes
             for r in routes:
@@ -338,10 +325,10 @@ class Solver:
             rt1.sequenceOfNodes.extend(rt2.sequenceOfNodes)
             rt1.load += rt2.load
             rt1.travelled = CalculateTravelledTime(self.distanceMatrix, rt1)
+            rt1.profit += rt2.profit
+            print("Load - Duration: ", rt1.load, " - ", rt1.travelled)
 
-        # Calculate profit foreach route
-        for r in routes:
-            r.profit = CalculateRouteProfit(r)
+        # Solution profit
         routes.sort(key=lambda x:x.profit, reverse=True)
         for i in range(0, 6):
             self.sol.routes.append(routes[i])
