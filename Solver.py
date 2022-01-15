@@ -1,3 +1,4 @@
+from multiprocessing.spawn import get_preparation_data
 import random, itertools, copy
 
 from Model import *
@@ -18,10 +19,6 @@ class Solution:
         self.profit = 0.0
         self.duration = 0.0
         self.routes = []
-
-
-
-
 
 class CustomerInsertion(object):
     """Represents a node insertion in a route
@@ -110,7 +107,7 @@ class Solver:
 
     def solve(self):
         #for i in range(1, 6):  # Maybe the range needs change
-        self.ClarkeWright()
+        self.ClarkeWrightPaessens()
         if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
             self.overallBestSol = copy.deepcopy(self.sol)
         """
@@ -239,10 +236,50 @@ class Solver:
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
-    def ClarkeWright(self, itr=1, rcl_size=1):
-        print("Loop: ", itr)
+    def ClarkeWrightPaessens(self):
         self.sol = Solution()
-        rng = random.Random(itr * 10)
+        
+        
+        # Paessens (1988) "M4" strategy parameters
+        #
+        # After several tests, the best parameteres are:
+        # g=1.4, f=0.5 
+        g_param, f_param = 1.4, 0.5
+    
+        routes, savings = self.PaessensInit(g_param, f_param)
+        
+        routes = self.ClarkeWrightAlgo(savings, routes)
+
+        solution = Solution()
+        solution.routes = routes
+        for r in routes:
+            solution.profit += r.profit
+
+        self.sol = solution
+
+
+            
+            
+    def PaessensInit(self, g_param: float, f_param: float):
+        """Paessens & Clarke-Wright savings algorithm initialization
+
+        This implements the Paessens (1988) variant of the parallel savings
+        model of Clarke and Wright (1964). The savings function is 
+        parametrized with multipliers g and f:
+
+            S_ij  = c_0i + c_0j - g * c_ij + f * | c_0i - c_0j |
+        
+        In our case, cost is replaced by profit:
+
+            S_ij = g * p_ij - (p_0i + p_0j) - f * | p_0i - p_0j |
+
+        Args:
+            g_param (`float`): g multiplier
+            f_param (`float`): f multiplier
+
+        Returns:
+            tuple(list[Route], list[SavingsObject]): Savings list & initial routes
+        """
 
         # Create routes for each customer
         routes: list[Route] = []
@@ -269,16 +306,40 @@ class Solver:
             j = pair[1]
             profitRemoved = profitChange[self.depot, i] + profitChange[self.depot, j]
             profitAdded = profitChange[i, j]
-            s = SavingsObject(i, j, profitAdded - profitRemoved)
+            # Savings function
+            s_ij = g_param * profitAdded - profitRemoved - f_param \
+                    * abs(profitChange[self.depot, i] - profitChange[self.depot, j])
+            s = SavingsObject(i, j, s_ij)
             savings.append(s)
         savings.sort(key=lambda x:x.distanceSaved, reverse=True)
-
         
+        return routes, savings
+
+    def ClarkeWrightAlgo(self, savings: list[SavingsObject],
+             routes: list[Route], itr=1, rcl_size=1) -> list[Route]:
+        """Clarke-Wright algorithm with rcl
+
+        Given savings and routes lists, creates routes according to
+        Clarke & Wright algorithm. Random candidate list is included, but
+        optional
+
+        Args:
+            savings (list[SavingsObject]): Savings list
+            routes (list[Route]): Initial routes
+            itr (int, optional): Algorithm iterations. Defaults to 1.
+            rcl_size (int, optional): Random candidate list. Defaults to 1.
+
+        Returns:
+            list[Route]: Solution routes
+        """
+
+        rng = random.Random(itr * 10)
+
         while savings:
 
             # Create rcl
             rcl: list[SavingsObject] = []
-        for s in savings:
+            for s in savings:
 
             # Check if routes of SavingsObject can be merged
             if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
@@ -288,6 +349,7 @@ class Solver:
 
             if len(rcl) == rcl_size:
                 break
+
 
             if len(rcl) > 0:
                 # Get random saving from Rcl
@@ -306,6 +368,7 @@ class Solver:
 
             # Find routes of nodes
             for r in routes:
+
                 if i in r.sequenceOfNodes:
                     rt1: Route = r
                 elif j in r.sequenceOfNodes:
@@ -323,16 +386,15 @@ class Solver:
             # Remove depot from second route
             rt2.sequenceOfNodes.pop(0)
             # Remove depot from first route
-            rt1.sequenceOfNodes.pop(-1)
+            rt1.sequenceOfNodes.pop()
             #merge routes
             rt1.sequenceOfNodes.extend(rt2.sequenceOfNodes)
             rt1.load += rt2.load
             rt1.travelled = CalculateTravelledTime(self.distanceMatrix, rt1)
             rt1.profit += rt2.profit
-            print("Load - Duration: ", rt1.load, " - ", rt1.travelled)
 
-        # Solution profit
-        routes.sort(key=lambda x:x.profit, reverse=True)
+        routes.sort(key=lambda x: x.profit, reverse=True)
+        output = []
         for i in range(0, 6):
-            self.sol.routes.append(routes[i])
-            self.sol.profit += routes[i].profit
+            output.append(routes[i])
+        return output
