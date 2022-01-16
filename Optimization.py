@@ -1,4 +1,4 @@
-import copy
+import copy, random
 
 from Testing import TestSolution
 from Model import (Route, Node)
@@ -183,9 +183,9 @@ class LocalSearch:
         self.swapMove = SwapMove()
         self.twoOptMove = TwoOptMove()
         self.terminateSearch = False
-        self.allRelocationMoves = ()
-        self.allSwapMoves = ()
-        self.allTowOptMoves = ()
+        self.allRelocationMoves = list()
+        self.allSwapMoves = list()
+        self.allTowOptMoves = list()
 
 
     def FindBestRelocationMove(self) -> RelocationMove:
@@ -223,20 +223,19 @@ class LocalSearch:
                                                 self.distanceMatrix[F.id][G.id] + B.service_time
 
                         moveDistance = distanceAdded - distanceRemoved
-                        allrm = RelocationMove()
-                        self.allRelocationMoves.append(allrm.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
-                                                                targetNodeIndex, originRtDurChange,
-                                                                targetRtDurChange, moveDistance))
-                        if (moveDistance < self.relocationMove.moveDistance):
-                            return self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
+                        if (moveDistance < self.relocationMove.moveDistance - 0.001):
+                            self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
                                                                 targetRtDurChange, moveDistance)
-    
+                            self.allRelocationMoves.append(self.relocationMove)
+                            return self.relocationMove
+        self.terminateSearch = True
+
     def FindBestSwapMove(self) -> SwapMove:
-        for firstRouteIndex in range(0, len(self.solution.routes)):
-            rt1: Route = self.solution.routes[firstRouteIndex]
-            for secondRouteIndex in range(firstRouteIndex, len(self.solution.routes)):
-                rt2: Route = self.solution.routes[secondRouteIndex]
+        for firstRouteIndex in range(0, len(self.initialSolution.routes)):
+            rt1: Route = self.initialSolution.routes[firstRouteIndex]
+            for secondRouteIndex in range(firstRouteIndex, len(self.initialSolution.routes)):
+                rt2: Route = self.initialSolution.routes[secondRouteIndex]
                 for firstNodeIndex in range(1, len(rt1.sequenceOfNodes) - 1):
                     startOfSecondNodeIndex = 1
                     if rt1 == rt2:
@@ -270,32 +269,30 @@ class LocalSearch:
                                 durAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id]
                                 moveDur = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
                         else:
-                            if rt1.load - b1.demand + b2.demand > self.constraints['capacity']:
+                            if rt1.load - b1.demand + b2.demand > rt1.capacity:
                                 continue
-                            if rt2.load - b2.demand + b1.demand > self.constraints['capacity']:
+                            if rt2.load - b2.demand + b1.demand > rt2.capacity:
                                 continue
 
                             durRemoved1 = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][c1.id] + b1.service_time
                             durAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id] + b2.service_time
                             durChangeFirstRoute = durAdded1 - durRemoved1
-                           
-                            if rt1.duration + durChangeFirstRoute > self.constraints['duration']:
+
+                            if rt1.duration + durChangeFirstRoute > rt1.duration:
                                 continue
                             durRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id] + b2.service_time
                             durAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id] + b1.service_time
                             durChangeSecondRoute = durAdded2 - durRemoved2
 
-                            if rt2.duration + durChangeSecondRoute > self.constraints['duration']:
+                            if rt2.duration + durChangeSecondRoute > rt2.duration:
                                 continue
 
                             moveDur = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
-                            alls = SwapMove()
-                            self.allSwapMoves.append(
-                                alls.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
-                                                durChangeFirstRoute, durChangeSecondRoute, moveDur))
                         if moveDur < self.swapMove.moveDur:
-                            return self.swapMove.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
+                            self.swapMove.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
                                                 durChangeFirstRoute, durChangeSecondRoute, moveDur)
+                            self.allSwapMoves.append(self.swapMove)
+                            return self.swapMove
 
     def FindBestTwoOptMove(self) -> TwoOptMove:
         for rtInd1 in range(0, len(self.solution.routes)):
@@ -330,8 +327,8 @@ class LocalSearch:
                             if CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
                                 continue
                         allto = TwoOptMove()
-                        self.allTwoOptMoves.append(
-                            allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost))
+                        allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost)
+                        self.allTwoOptMoves.append(allto)
                         if moveCost < self.twoOptMove.moveCost:
                             return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost) #change to durations
 
@@ -339,7 +336,7 @@ class LocalSearch:
 
         rm = self.relocationMove
 
-        oldDuration = CalculateTotalDuration(self.initialSolution)
+        oldDuration = CalculateTotalDuration(self.distanceMatrix, self.initialSolution)
 
         originRt = self.optimizedSolution.routes[rm.originRoutePosition]
         targetRt = self.optimizedSolution.routes[rm.targetRoutePosition]
@@ -357,23 +354,27 @@ class LocalSearch:
         else:
             del originRt.sequenceOfNodes[rm.originNodePosition]
             targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
-            originRt.travelled = CalculateTravelledTime(originRt)
-            targetRt.travelled = CalculateTravelledTime(targetRt)
+            originRt.travelled = CalculateTravelledTime(self.distanceMatrix, originRt)
+            targetRt.travelled = CalculateTravelledTime(self.distanceMatrix, targetRt)
             originRt.load -= B.demand
             targetRt.load += B.demand
 
-        newDuration = CalculateTotalDuration(self.solution)
-        # debuggingOnly
-        if abs((newDuration - oldDuration) - rm.moveDistance) > 0.0001:
+        newDuration = CalculateTotalDuration(self.distanceMatrix, self.optimizedSolution)
+
+        '''
+         # debuggingOnly
+                if abs((newDuration - oldDuration) - rm.moveDistance) > 0.0001:
             print('Cost Issue')
+        
+        '''
 
     def ApplySwapMove(self):
 
         sm = self.swapMove
 
-        oldDur = CalculateTotalDuration(self.solution)  # TODO Implement inside Utils.py
-        rt1 = self.solution.routes[sm.positionOfFirstRoute]
-        rt2 = self.solution.routes[sm.positionOfSecondRoute]
+        oldDur = CalculateTotalDuration(self.distanceMatrix, self.initialSolution)  # TODO Implement inside Utils.py
+        rt1 = self.initialSolution.routes[sm.positionOfFirstRoute]
+        rt2 = self.initialSolution.routes[sm.positionOfSecondRoute]
         b1 = rt1.sequenceOfNodes[sm.positionOfFirstNode]
         b2 = rt2.sequenceOfNodes[sm.positionOfSecondNode]
         rt1.sequenceOfNodes[sm.positionOfFirstNode] = b2
@@ -387,12 +388,12 @@ class LocalSearch:
             rt1.load = rt1.load - b1.demand + b2.demand
             rt2.load = rt2.load + b1.demand - b2.demand
 
-        self.solution.duration += sm.moveDur
-
-        newDur = CalculateTotalDuration(self.solution)  # TODO Implement inside Utils.py
-        # debuggingOnly
+        newDur = CalculateTotalDuration(self.distanceMatrix, self.optimizedSolution)  # TODO Implement inside Utils.py
+        '''
+                # debuggingOnly
         if abs((newDur - oldDur) - sm.moveDur) > 0.0001:
             print('Cost Issue')
+        '''
 
     def ApplyTwoOptMove(self): #apply to durations
 
@@ -441,8 +442,8 @@ class LocalSearch:
             if self.operator == 0:
                 self.FindBestRelocationMove()
 
-                if self.relocationMove.originRoutePosition:
-                    if self.relocationMove.moveDistance > 0:
+                if self.relocationMove.originRoutePosition is not None:
+                    if self.relocationMove.moveDistance < 0:
                         self.ApplyRelocationMove()
                     else:
                         self.terminateSearch = True
@@ -450,8 +451,8 @@ class LocalSearch:
             elif self.operator == 1:
                 self.FindBestSwapMove()
 
-                if self.swapMove.positionOfFirstRoute:
-                    if self.swapMove.moveProfit > 0:
+                if self.swapMove.positionOfFirstRoute is not None:
+                    if self.swapMove.moveDur < 0:
                         self.ApplySwapMove()
                     else:
                         self.terminateSearch = True
@@ -459,15 +460,15 @@ class LocalSearch:
             elif self.operator == 2:
                 self.FindBestTwoOptMove()
 
-                if self.twoOptMove.positionOfFirstRoute:
+                if self.twoOptMove.positionOfFirstRoute is not None:
                     if self.twoOptMove.moveProfit > 0:
                         self.ApplyTwoOptMove()
                     else:
                         self.terminateSearch = True
 
-            TestSolution(self.initialSolution)
+      #      TestSolution(self.initialSolution)
 
-            if (self.initialSolution.profit > self.optimizedSolution.profit):
+            if (self.initialSolution.duration < self.optimizedSolution.duration):
                 self.optimizedSolution = copy.deepcopy(self.initialSolution)
 
             self.localSearchIterator = self.localSearchIterator + 1
@@ -497,6 +498,7 @@ s: initial solution
 k: local search operator
 '''
 def Shake(s, k: int, distanceMatrix):
+    random.seed(10)
     ls = LocalSearch(s, distanceMatrix, None, k)
     ls.run()
     solutions = None
@@ -505,16 +507,19 @@ def Shake(s, k: int, distanceMatrix):
         solutions = ls.allRelocationMoves
         indx = random.randint(0, len(solutions) - 1)
         ls.relocationMove = solutions[indx]
-        ss = ls.ApplyRelocationMove()
+        ls.ApplyRelocationMove()
+        ss = ls.optimizedSolution
     elif k == 1:
         solutions = ls.allSwapMoves
         indx = random.randint(0, len(solutions) - 1)
         ls.swapMove = solutions[indx]
-        ss = ls.ApplySwapMove()
+        ls.ApplySwapMove()
+        ss = ls.optimizedSolution
     elif k == 2:
         solutions = ls.ApplyTwoOptMoves()
         ls.twoOptMove = solutions[indx]
-        ss = ls.ApplyTwoOptMove()
+        ls.ApplyTwoOptMove()
+        ss = ls.optimizedSolution
     return ss
 
 '''

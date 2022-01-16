@@ -4,7 +4,7 @@ import random, itertools, copy
 from Model import *
 from Utils import *
 from Testing import *
-from Optimization import LocalSearch
+from Optimization import *
 
 
 
@@ -129,13 +129,21 @@ class Solver:
 
         self.sol = self.overallBestSol
         """
-
+        '''
         self.ClarkeWrightPaessens()
-        print("Clarke-Wirght paessens")
-        ReportSolution(self.sol, self.allNodes)
+            print("Clarke-Wirght paessens")
+            ReportSolution(self.sol, self.allNodes)
+        '''
+
         print("Nearest neigbor")
         self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
         ReportSolution(self.sol, self.allNodes)
+        print("duration before vns")
+        print(self.sol.duration)
+        self.sol = VNS(self.sol, 1, self.distanceMatrix)
+        print("duration after vns")
+        self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
+        print(self.sol.duration)
        # print("Overall Best")
        # ReportSolution(self.overallBestSol, self.allNodes)
         return self.sol
@@ -219,7 +227,8 @@ class Solver:
                     break
                 else:
                     rt = Route(self.depot, self.capacity, self.duration)
-                    self.sol.routes.append(rt)
+                    if insertions < self.vehicles:
+                        self.sol.routes.append(rt)
                     insertions += 1
 
     def ApplyCustomerInsertion(self, insertion):
