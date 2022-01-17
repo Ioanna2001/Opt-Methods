@@ -115,9 +115,10 @@ class TwoOptMove(object):
         positionOfSecondRoute: Route number of second node
         positionOfFirstNode: Position number of first node
         positionOfSecondNode: Position number of second node
-        moveProfit: Change in profit earned
+        moveDur: Duration reduction
 
     """
+
     def __init__(self):
         """Default constructor
 
@@ -127,9 +128,9 @@ class TwoOptMove(object):
         self.positionOfSecondRoute = None
         self.positionOfFirstNode = None
         self.positionOfSecondNode = None
-        self.moveProfit = 0
+        self.moveDur = 10**9
 
-    def Initialize(self, positionOfFirstRoute, positionOfSecondRoute, positionOfFirstNode, positionOfSecondNode, moveProfit):
+    def Initialize(self, positionOfFirstRoute, positionOfSecondRoute, positionOfFirstNode, positionOfSecondNode, moveDur):
         """Full constructor
 
         Inits fields to argument values
@@ -139,13 +140,13 @@ class TwoOptMove(object):
             positionOfSecondRoute: `int`
             positionOfFirstNode: `int`
             positionOfSecondNode: `int`
-            moveProfit: `int`
+            moveDur: `int`
         """
         self.positionOfFirstRoute = positionOfFirstRoute
         self.positionOfSecondRoute = positionOfSecondRoute
         self.positionOfFirstNode = positionOfFirstNode
         self.positionOfSecondNode = positionOfSecondNode
-        self.moveProfit = moveProfit
+        self.moveDur = moveDur
 
 
 class LocalSearch:
@@ -315,10 +316,12 @@ class LocalSearch:
                         if rt1 == rt2:
                             if nodeInd1 == 0 and nodeInd2 == len(rt1.sequenceOfNodes) - 2:
                                 continue
-                            costAdded = self.distanceMatrix[A.id][K.id] + self.distanceMatrix[B.id][L.id] #change to durations
-                            costRemoved = self.distanceMatrix[A.id][B.id] + self.distanceMatrix[K.id][L.id]
-                            moveCost = costAdded - costRemoved
+                            durAdded = self.distanceMatrix[A.id][K.id] + self.distanceMatrix[B.id][L.id]
+                            durRemoved = self.distanceMatrix[A.id][B.id] + self.distanceMatrix[K.id][L.id]
+                            moveDur = durAdded - durRemoved
+
                         else:
+                            #TODO calculate moveDur when rt1 != rt2
                             if nodeInd1 == 0 and nodeInd2 == 0:
                                 continue
                             if nodeInd1 == len(rt1.sequenceOfNodes) - 2 and nodeInd2 == len(rt2.sequenceOfNodes) - 2:
@@ -326,11 +329,13 @@ class LocalSearch:
 
                             if CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
                                 continue
+
                         allto = TwoOptMove()
                         allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost)
                         self.allTwoOptMoves.append(allto)
-                        if moveCost < self.twoOptMove.moveCost:
-                            return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost) #change to durations
+                        
+                        if moveDur < self.twoOptMove.moveDur:
+                            return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
 
     def ApplyRelocationMove(self):
 
@@ -396,7 +401,6 @@ class LocalSearch:
         '''
 
     def ApplyTwoOptMove(self): #apply to durations
-
         top = self.twoOptMove
 
         rt1: Route = self.solution.routes[top.positionOfFirstRoute]
