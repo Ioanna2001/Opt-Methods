@@ -1,5 +1,4 @@
-from multiprocessing.spawn import get_preparation_data
-import random, itertools, copy
+import random, copy
 
 from Model import *
 from Utils import *
@@ -76,6 +75,12 @@ class SavingsObject():
         self.j = j
         self.distanceSaved = distanceSaved
 
+class RandomCandidate:
+
+    def __init__(self, customer: Node, profit: float):
+        self.customer = customer
+        self.trialProfit = profit
+
 class Solver:
     """Class to solve built problem model
 
@@ -106,13 +111,7 @@ class Solver:
         self.rcl_size = 1
 
     def solve(self):
-        '''
-        self.ClarkeWrightPaessens()
-        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-            self.overallBestSol = copy.deepcopy(self.sol)
-        '''
-        self.ApplyNearestNeighborMethod()
-        cc = self.sol.profit
+        self.sol = self.NearestNeighbor()
         if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
             self.overallBestSol = copy.deepcopy(self.sol)
         """
@@ -129,23 +128,17 @@ class Solver:
 
         self.sol = self.overallBestSol
         """
-        '''
-        self.ClarkeWrightPaessens()
-            print("Clarke-Wirght paessens")
-            ReportSolution(self.sol, self.allNodes)
-        '''
-
-        print("Nearest neigbor")
-        self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
-        ReportSolution(self.sol, self.allNodes)
-        print("duration before vns")
-        print(self.sol.duration)
-        self.sol = VNS(self.sol, 1, self.distanceMatrix)
-        print("duration after vns")
-        self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
-        print(self.sol.duration)
-       # print("Overall Best")
-       # ReportSolution(self.overallBestSol, self.allNodes)
+        # print("Nearest neigbor")
+        # self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
+        # ReportSolution("Nearest neighbour", self.sol, self.allNodes)
+        # print("duration before vns")
+        # print(self.sol.duration)
+        # self.sol = VNS(self.sol, 1, self.distanceMatrix)
+        # print("duration after vns")
+        # self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
+        # print(self.sol.duration)
+        print("Overall Best")
+        ReportSolution("Overall", self.overallBestSol, self.allNodes)
         return self.sol
 
     def MinimumInsertions(self, itr):
@@ -178,71 +171,6 @@ class Solver:
             # reportSolution
 
         TestSolution(self.sol)
-
-    def IdentifyBest_NN_ofLastVisited(self, bestInsertion, rt, itr=20):
-        random.seed(itr)
-        rcl = []
-        #the rcl list holds the 3 NearestNeighbor nodes with the best profit
-        for i in range(0, len(self.customers)):
-            candidateCust: Node = self.customers[i]
-            if candidateCust.isRouted is False:
-                if rt.load + candidateCust.demand <= rt.capacity:
-                    if CalculateRouteDuration(self.distanceMatrix, rt, candidateCust) + rt.travelled <= rt.duration:
-                        lastNodePresentInTheRoute = rt.sequenceOfNodes[-2] #check if candidates duration fits
-                        trialProfit = candidateCust.profit/CalculateRouteDuration(self.distanceMatrix, rt, candidateCust)
-                        # Update rcl list
-                        if len(rcl) < self.rcl_size:
-                            new_tup = (trialProfit, candidateCust, rt)
-                            rcl.append(new_tup)
-                            #rcl[-1] holds the NN node with the best profit so far
-                            rcl.sort(key=lambda x: x[0])
-                        elif trialProfit > rcl[0][0]:
-                            rcl.pop(0)
-                            new_tup = (trialProfit, candidateCust, rt)
-                            rcl.append(new_tup)
-                            rcl.sort(key=lambda x: x[0])
-        if len(rcl) > 0:
-            #which one of the three will be inserted is picked randomly
-            tup_index = random.randint(0, len(rcl) - 1)
-            tpl = rcl[tup_index]
-            bestInsertion.profit = tpl[0] 
-            bestInsertion.customer = tpl[1]
-            bestInsertion.route = tpl[2]
-
-    def ApplyNearestNeighborMethod(self, itr=30):
-        modelIsFeasible = True
-        self.sol = Solution()
-        insertions = 0
-        while (insertions <= self.vehicles):  # Stops when all routes max duration and capacity is reached
-            bestInsertion = CustomerInsertion()
-            lastOpenRoute: Route = GetLastOpenRoute(self.sol)
-            if lastOpenRoute is not None:
-                self.IdentifyBest_NN_ofLastVisited(bestInsertion, lastOpenRoute, itr)
-            if (bestInsertion.customer is not None):
-                self.ApplyCustomerInsertion(bestInsertion)
-            else:
-                # If there is an empty available route
-                if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
-                    modelIsFeasible = False
-                    break
-                else:
-                    rt = Route(self.depot, self.capacity, self.duration)
-                    if insertions < self.vehicles:
-                        self.sol.routes.append(rt)
-                    insertions += 1
-
-    def ApplyCustomerInsertion(self, insertion):
-        insCustomer = insertion.customer
-        rt = insertion.route
-        # before the second depot occurrence
-        insIndex = len(rt.sequenceOfNodes) - 1
-        rt.sequenceOfNodes.insert(insIndex, insCustomer)
-        profitAdded = insCustomer.profit
-        rt.profit += profitAdded
-        self.sol.profit += profitAdded
-        rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
-        rt.load += insCustomer.demand
-        insCustomer.isRouted = True
 
     def IdentifyBestInsertionAllPositions(self, bestInsertion, rt, itr=10):
         random.seed(itr)
@@ -285,165 +213,57 @@ class Solver:
         rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
         insCustomer.isRouted = True
 
-    def ClarkeWrightPaessens(self):
-        self.sol = Solution()
-        
-        
-        # Paessens (1988) "M4" strategy parameters
-        #
-        # After several tests, the best parameteres are:
-        # g=1.4, f=0.5 
-        g_param, f_param = 1.4, 0.5
-    
-        routes, savings = self.PaessensInit(g_param, f_param)
-        
-        routes = self.ClarkeWrightAlgo(savings, routes)
 
+    def NearestNeighbor(self, itr=30) -> Solution:
         solution = Solution()
-        solution.routes = routes
-        for r in routes:
-            solution.profit += r.profit
+        solution.routes.append(Route(self.depot, self.capacity, self.duration))
+        pool = copy.deepcopy(self.customers)
 
-        self.sol = solution
+        while len(solution.routes) <= 6 and pool:
+            rt = solution.routes[-1]
 
+            insertCust = self.FindBestNN(pool, rt, itr)
+            if insertCust:
+                # before the second occurence of depot
+                insIndex = len(rt.sequenceOfNodes) - 1
+                rt.sequenceOfNodes.insert(insIndex, insertCust)
+                rt.profit += insertCust.profit
+                rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
+                rt.load += insertCust.demand
+                pool.remove(insertCust)
 
-            
-            
-    def PaessensInit(self, g_param: float, f_param: float):
-        """Paessens & Clarke-Wright savings algorithm initialization
-
-        This implements the Paessens (1988) variant of the parallel savings
-        model of Clarke and Wright (1964). The savings function is 
-        parametrized with multipliers g and f:
-
-            S_ij  = c_0i + c_0j - g * c_ij + f * | c_0i - c_0j |
-        
-        In our case, cost is replaced by profit:
-
-            S_ij = g * p_ij - (p_0i + p_0j) - f * | p_0i - p_0j |
-
-        Args:
-            g_param (`float`): g multiplier
-            f_param (`float`): f multiplier
-
-        Returns:
-            tuple(list[Route], list[SavingsObject]): Savings list & initial routes
-        """
-
-        # Create routes for each customer
-        routes: list[Route] = []
-        for c in self.customers:
-            route = Route(self.depot, self.capacity, self.duration)
-            route.sequenceOfNodes.insert(1, c)
-            route.load = c.demand
-            route.travelled = CalculateTravelledTime(self.distanceMatrix, route)
-            route.profit = c.profit
-            routes.append(route)
-
-        # Create cost matrix
-        profitChange = {}
-        for pair in itertools.combinations(self.allNodes, 2):
-            a: Node = pair[0]
-            b: Node = pair[1]
-            dist = math.sqrt(math.pow(a.x - b.x, 2) + math.pow(a.y - b.y, 2))
-            profitChange[pair] = b.profit / dist + b.service_time  # TODO Test alternatives
-
-        # Create savings matrix
-        savings = []
-        for pair in itertools.combinations(self.customers, 2):
-            i = pair[0]
-            j = pair[1]
-            profitRemoved = profitChange[self.depot, i] + profitChange[self.depot, j]
-            profitAdded = profitChange[i, j]
-            # Savings function
-            s_ij = g_param * profitAdded - profitRemoved - f_param \
-                    * abs(profitChange[self.depot, i] - profitChange[self.depot, j])
-            s = SavingsObject(i, j, s_ij)
-            savings.append(s)
-        savings.sort(key=lambda x:x.distanceSaved, reverse=True)
-        
-        return routes, savings
-
-    def ClarkeWrightAlgo(self, savings: list[SavingsObject],
-             routes: list[Route], itr=1, rcl_size=1) -> list[Route]:
-        """Clarke-Wright algorithm with rcl
-
-        Given savings and routes lists, creates routes according to
-        Clarke & Wright algorithm. Random candidate list is included, but
-        optional
-
-        Args:
-            savings (list[SavingsObject]): Savings list
-            routes (list[Route]): Initial routes
-            itr (int, optional): Algorithm iterations. Defaults to 1.
-            rcl_size (int, optional): Random candidate list. Defaults to 1.
-
-        Returns:
-            list[Route]: Solution routes
-        """
-
-        rng = random.Random(itr * 10)
-
-        while savings:
-
-            # Create rcl
-            rcl: list[SavingsObject] = []
-            for s in savings:
-
-                # Check if routes of SavingsObject can be merged
-                if not ClarkeWrightConditions(self.distanceMatrix, routes, s.i, s.j):
-                    continue
-                else:
-                    rcl.append(s)
-
-                if len(rcl) == rcl_size:
-                    break
-
-
-            if len(rcl) > 0:
-                # Get random saving from Rcl
-                randomIndex = rng.randint(0, len(rcl) - 1)
             else:
-                # No feasible nodes left
-                break
+                solution.routes.append(Route(self.depot, self.capacity, self.duration))
+                solution.profit += rt.profit
+                solution.duration += rt.travelled
 
-            s = rcl[randomIndex]
-            savings.remove(s)
+        solution.routes.pop()
+        return solution 
 
-            # fist node
-            i = s.i
-            # second node
-            j = s.j
+    def FindBestNN(self, pool: list[Node], route: Route, itr) -> Node:
+        rng = random.Random(itr)
+        rcl: list[RandomCandidate] = []
+        for cust in pool:
+            if route.load + cust.demand <= route.capacity and \
+                CalculateRouteDuration(self.distanceMatrix, route, cust) \
+                + route.travelled <= route.duration:
 
-            # Find routes of nodes
-            for r in routes:
+                trialProfit = cust.profit / \
+                    math.pow(CalculateRouteDuration(self.distanceMatrix, route, cust), 0.9)
+                
+                candidate = RandomCandidate(cust, trialProfit)
 
-                if i in r.sequenceOfNodes:
-                    rt1: Route = r
-                elif j in r.sequenceOfNodes:
-                    rt2: Route = r
+                # Update rcl list
+                if len(rcl) <= self.rcl_size:
+                    rcl.append(candidate)
+                    rcl.sort(key=lambda x: x.trialProfit)
+                elif candidate.trialProfit > rcl[0].trialProfit:
+                    rcl.pop(0)
+                    rcl.append(candidate)
+                    rcl.sort(key=lambda x: x.trialProfit)
+        if len(rcl) == 0:
+            return  # No fit candidates left
 
-            # Figure out which node should go first
-            if rt2.sequenceOfNodes[1] != j and rt1.sequenceOfNodes[-2] != i:
-                # swap nodes
-                i, j = j, i
-                # swap routes
-                rt1, rt2 = rt2, rt1
-
-            # Remove route to be merged
-            routes.remove(rt2)
-            # Remove depot from second route
-            rt2.sequenceOfNodes.pop(0)
-            # Remove depot from first route
-            rt1.sequenceOfNodes.pop()
-            #merge routes
-            rt1.sequenceOfNodes.extend(rt2.sequenceOfNodes)
-            rt1.load += rt2.load
-            rt1.travelled = CalculateTravelledTime(self.distanceMatrix, rt1)
-            rt1.profit += rt2.profit
-
-        routes.sort(key=lambda x: x.profit, reverse=True)
-        output = []
-        for i in range(0, 6):
-            output.append(routes[i])
-        return output
+        # Choose a candidate randomly
+        candidateIndex = rng.randint(0, len(rcl) - 1)
+        return rcl[candidateIndex].customer
