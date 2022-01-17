@@ -1,4 +1,4 @@
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from Model import Route
 
@@ -22,7 +22,7 @@ def TestSolution(solution):
     if abs(totalSolProfit - solution.profit) < 0.0001: #change operator
         print('Solution Profit problem')
     
-def ReportSolution(solution, allNodes):
+def ReportSolution(name, solution, allNodes):
     print("Best solution")
     for i in range(0, len(solution.routes)):
         rt = solution.routes[i]
@@ -32,7 +32,7 @@ def ReportSolution(solution, allNodes):
         for j in range(0, len(rt.sequenceOfNodes)):
             print(rt.sequenceOfNodes[j].id, end=' ')
         print("\nRoute profit:", rt.profit)
- #   SolDrawer.draw('ClarkeWright', solution, allNodes)
+    SolDrawer.draw(name, solution, allNodes)
     print("Total profit:", solution.profit)
 
 class SolDrawer:
