@@ -133,11 +133,13 @@ class Solver:
         # ReportSolution("Nearest neighbour", self.sol, self.allNodes)
         print("duration before vns")
         print(self.sol.duration)
+
         self.sol = VNS(self.sol, 0, self.distanceMatrix)
         print("duration after vns")
         self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
         print(self.sol.duration)
         print("Overall Best")
+        self.overallBestSol = copy.deepcopy(self.sol)
         ReportSolution("Overall", self.overallBestSol, self.allNodes)
         return self.sol
 

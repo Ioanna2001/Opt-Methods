@@ -190,7 +190,7 @@ class LocalSearch:
 
 
     def FindBestRelocationMove(self) -> RelocationMove:
-        self.terminateSearch = True
+
         for originRouteIndex in range(0, len(self.initialSolution.routes)):
             rt1: Route = self.initialSolution.routes[originRouteIndex]
             for targetRouteIndex in range(0, len(self.initialSolution.routes)):
@@ -225,12 +225,20 @@ class LocalSearch:
                                                 self.distanceMatrix[F.id][G.id] + B.service_time
 
                         moveDistance = distanceAdded - distanceRemoved
+                        if moveDistance < 0:
+                            copyrm = RelocationMove()
+                            copyrm.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
+                                                                targetNodeIndex, originRtDurChange,
+                                                                targetRtDurChange, moveDistance)
+                            self.allRelocationMoves.append(copyrm)
+
                         if (moveDistance < self.relocationMove.moveDistance - 0.01):
                             self.terminateSearch = False
                             self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
                                                                 targetRtDurChange, moveDistance)
                             return self.relocationMove
+        self.terminateSearch = True
 
     def FindBestSwapMove(self) -> SwapMove:
         for firstRouteIndex in range(0, len(self.initialSolution.routes)):
@@ -437,7 +445,7 @@ class LocalSearch:
 
         self.solution.cost += top.moveCost
 
-    def run(self, applyLSMove):
+    def run(self):
 
         while not self.terminateSearch:
 
@@ -449,10 +457,7 @@ class LocalSearch:
 
                 if self.relocationMove.originRoutePosition is not None:
                     if self.relocationMove.moveDistance < 0:
-                        if not applyLSMove:
-                            self.allRelocationMoves.append(self.relocationMove)
-                        else:
-                            self.ApplyRelocationMove()
+                        self.ApplyRelocationMove()
                     else:
                         self.terminateSearch = True
             # Swaps
@@ -508,15 +513,16 @@ k: local search operator
 def Shake(s, k: int, distanceMatrix):
     random.seed(10)
     ls = LocalSearch(s, distanceMatrix, None, k)
-    ls.run(applyLSMove=False)
+    lsInitial = LocalSearch(s, distanceMatrix, None, k)
+    ls.run()
     solutions = None
     ss = None
     if k == 0:
         solutions = ls.allRelocationMoves
         indx = random.randint(0, len(solutions) - 1)
-        ls.relocationMove = solutions[indx]
-        ls.ApplyRelocationMove()
-        ss = ls.optimizedSolution
+        lsInitial.relocationMove = solutions[indx]
+        lsInitial.ApplyRelocationMove()
+        ss = lsInitial.optimizedSolution
     elif k == 1:
         solutions = ls.allSwapMoves
         indx = random.randint(0, len(solutions) - 1)
@@ -543,7 +549,7 @@ def BestImprovement(s, distanceMatrix, k: int):
     while (condition):
         ss = copy.deepcopy(s)
         ls = LocalSearch(s, distanceMatrix, None, k)
-        ls.run(applyLSMove=True)
+        ls.run()
         s = ls.optimizedSolution
         if (s.duration >= ss.duration):
             break
@@ -564,6 +570,6 @@ def VNS(s, kmax: int, distanceMatrix):
         ss = Shake(s, k, distanceMatrix)
         sss = BestImprovement(ss, distanceMatrix, k)
         s, k = NeighbourhoodChange(s, sss, k)
-        if k >= kmax:
+        if k > kmax:
             break
     return s
