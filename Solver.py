@@ -115,9 +115,10 @@ class Solver:
         self.rcl_size = 1
 
     def solve(self):
-        self.sol = self.MinimumInsertions()
-        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-            self.overallBestSol = copy.deepcopy(self.sol)
+        for seed in range(10, 60, 10):
+            self.sol = self.MinimumInsertions(itr=seed)
+            if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
+                self.overallBestSol = copy.deepcopy(self.sol)
         ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
         print()
         print("MinInsertions")
