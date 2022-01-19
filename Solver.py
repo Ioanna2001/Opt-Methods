@@ -167,11 +167,11 @@ class Solver:
         rcl: list[RandomCandidate] = []
         for cust in pool:
             if route.load + cust.demand <= route.capacity and \
-                CalculateRouteDuration(self.distanceMatrix, route, cust) \
+                AppendNodeDuration(self.distanceMatrix, route, cust) \
                 + route.travelled <= route.duration:
 
                 trialProfit = cust.profit / \
-                    math.pow(CalculateRouteDuration(self.distanceMatrix, route, cust), 0.9)
+                    math.pow(AppendNodeDuration(self.distanceMatrix, route, cust), 0.9)
                 
                 candidate = RandomCandidate(cust, trialProfit, route, route.sequenceOfNodes[-1])
 

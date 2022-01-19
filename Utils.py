@@ -1,9 +1,9 @@
 from Model import Route, Node
 
-def CalculateRouteDuration(distanceMatrix: list[int], rt: Route, targetNode: Node) -> float:
-    """Calculates total duration of route when appending a new node
+def AppendNodeDuration(distanceMatrix: list[int], rt: Route, targetNode: Node) -> float:
+    """Calculates duration of visiting new node
 
-    Calculates vehicle's time spent in specific route, when a new node is added.
+    Calculates vehicle's time spent when a new node is added.
     Combines both travelling time and service time of the new node.
 
     Args:

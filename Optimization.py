@@ -2,7 +2,7 @@ import copy, random
 
 from Testing import TestSolution
 from Model import (Route, Node)
-from Utils import (CalculateRouteDuration, CalculateTravelledTime, CalculateTotalDuration,
+from Utils import (AppendNodeDuration, CalculateTravelledTime, CalculateTotalDuration,
                         UpdateRouteCostAndLoad, CapacityIsViolated)
 
 
@@ -211,7 +211,7 @@ class LocalSearch:
 
                         if rt1 != rt2:
                             if rt2.load + B.demand > rt2.capacity or \
-                                    rt2.travelled + CalculateRouteDuration(self.distanceMatrix, rt2, B) > rt2.duration:
+                                    rt2.travelled + AppendNodeDuration(self.distanceMatrix, rt2, B) > rt2.duration:
                                 continue
 
                         distanceAdded = self.distanceMatrix[A.id][C.id] + self.distanceMatrix[F.id][B.id] + \
