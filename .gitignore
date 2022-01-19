@@ -28,3 +28,6 @@ MANIFEST
 
 # Plot pngs
 *.png
+
+# Solution .txt files
+*.txt
