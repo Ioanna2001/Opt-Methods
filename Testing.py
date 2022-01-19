@@ -1,4 +1,4 @@
-#import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt
 
 from Model import Route
 
@@ -26,13 +26,14 @@ def ReportSolution(name, solution, allNodes):
     print("Best solution")
     for i in range(0, len(solution.routes)):
         rt = solution.routes[i]
-        print("=== Route " + str(i) + " ===")
+        print("=== Route " + str(i + 1) + " ===")
         print("load: " + str(rt.load))
         print("duration: " + str(rt.travelled))
         for j in range(0, len(rt.sequenceOfNodes)):
             print(rt.sequenceOfNodes[j].id, end=' ')
         print("\nRoute profit:", rt.profit)
- #   SolDrawer.draw(name, solution, allNodes)
+    print("========================")
+    SolDrawer.draw(name, solution, allNodes)
     print("Total profit:", solution.profit)
 
 class SolDrawer:
