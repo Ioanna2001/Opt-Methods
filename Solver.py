@@ -77,9 +77,13 @@ class SavingsObject():
 
 class RandomCandidate:
 
-    def __init__(self, customer: Node, profit: float):
+    def __init__(self, customer: Node, trialProfit: float, \
+            route: Route, insertionPosition: int):
+
         self.customer = customer
-        self.trialProfit = profit
+        self.trialProfit = trialProfit
+        self.route = route
+        self.insertionPosition = insertionPosition
 
 class Solver:
     """Class to solve built problem model
@@ -111,110 +115,24 @@ class Solver:
         self.rcl_size = 1
 
     def solve(self):
-        self.sol = self.NearestNeighbor()
+        self.sol = self.MinimumInsertions()
         if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
             self.overallBestSol = copy.deepcopy(self.sol)
-        """
-     #  print(i, 'Constr:', self.sol.profit)
-        self.MinimumInsertions(i)
-        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-            self.overallBestSol = copy.deepcopy(self.sol)
-     #   self.ReportSolution(self.sol)
-        optimize = LocalSearch(self.sol, self.distanceMatrix, self.constraints, operator=0)
-        self.sol = optimize.run()
-        if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-            self.overallBestSol = copy.deepcopy(self.sol)
-    #    print(i, 'Const: ', cc, ' LS:', self.sol.profit, 'BestOverall: ', self.overallBestSol.profit)
-
-        self.sol = self.overallBestSol
-        """
-        # print("Nearest neigbor")
+        ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
+        print()
+        print("MinInsertions")
         self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
-        # ReportSolution("Nearest neighbour", self.sol, self.allNodes)
         print("duration before vns")
         print(self.sol.duration)
-
-        self.sol = VNS(self.sol, 0, self.distanceMatrix)
+        self.overallBestSol = VNS(self.overallBestSol, 0, self.distanceMatrix)
         print("duration after vns")
         self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
         print(self.sol.duration)
+        print()
         print("Overall Best")
         self.overallBestSol = copy.deepcopy(self.sol)
         ReportSolution("Overall", self.overallBestSol, self.allNodes)
         return self.sol
-
-    def MinimumInsertions(self, itr):
-        modelIsFeasible = True
-        self.sol = Solution()
-        insertions = 0
-
-        while (insertions < self.vehicles): #Change it to stop when all routes max durations are reached
-            bestInsertion = CustomerInsertionAllPositions()
-            lastOpenRoute: Route = GetLastOpenRoute(self.sol)
-
-            if lastOpenRoute is not None:
-                self.IdentifyBestInsertionAllPositions(bestInsertion, lastOpenRoute, itr)
-
-            if (bestInsertion.customer is not None):
-                    self.ApplyCustomerInsertionAllPositions(bestInsertion)
-            else:
-                # If there is an empty available route
-                if lastOpenRoute is not None and len(lastOpenRoute.sequenceOfNodes) == 2:
-                    modelIsFeasible = False
-                    break
-                # If there is no empty available route and no feasible insertion was identified
-                else:
-                    rt = Route(self.depot, self.capacity, self.duration)
-                    self.sol.routes.append(rt)
-                    insertions += 1
-
-        if (modelIsFeasible == False):
-            print('FeasibilityIssue')
-            # reportSolution
-
-        TestSolution(self.sol)
-
-    def IdentifyBestInsertionAllPositions(self, bestInsertion, rt, itr=10):
-        random.seed(itr)
-        rcl = []
-        for i in range(0, len(self.customers)):
-            candidateCust: Node = self.customers[i]
-            if candidateCust.isRouted is False:
-                if rt.load + candidateCust.demand <= rt.capacity:
-                    if CalculateRouteDuration(self.distanceMatrix, rt, candidateCust) + rt.travelled <= rt.duration:
-                        for j in range(0, len(rt.sequenceOfNodes) - 1):
-                            trialProfit = candidateCust.profit
-
-                            if len(rcl) < self.rcl_size:
-                                new_tup = (trialProfit, candidateCust, rt, j)
-                                rcl.append(new_tup)
-                                rcl.sort(key=lambda x: x[0])
-                            elif trialProfit < rcl[-1][0]:
-                                rcl.pop(len(rcl) - 1)
-                                new_tup = (trialProfit, candidateCust, rt, j)
-                                rcl.append(new_tup)
-                                rcl.sort(key=lambda x: x[0])
-        if len(rcl) > 0:
-            tup_index = random.randint(0, len(rcl) - 1)
-            tpl = rcl[tup_index]
-            bestInsertion.profit = tpl[0]
-            bestInsertion.customer = tpl[1]
-            bestInsertion.route = tpl[2]
-            bestInsertion.insertionPosition = tpl[3]
-
-    def ApplyCustomerInsertionAllPositions(self, insertion):
-        insCustomer = insertion.customer
-        rt = insertion.route
-        # before the second depot occurrence
-        insIndex = insertion.insertionPosition
-        rt.sequenceOfNodes.insert(insIndex + 1, insCustomer)
-        rt.profit += insertion.profit
-        self.sol.profit += insertion.profit
-        self.sol.duration = CalculateTotalDuration(self.sol)
-        rt.load += insCustomer.demand
-        rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
-        insCustomer.isRouted = True
-
 
     def NearestNeighbor(self, itr=30) -> Solution:
         solution = Solution()
@@ -269,3 +187,92 @@ class Solver:
         # Choose a candidate randomly
         candidateIndex = rng.randint(0, len(rcl) - 1)
         return rcl[candidateIndex].customer
+
+
+    def MinimumInsertions(self, itr=30, foundSolution: Solution = None) -> Solution:
+        """Implements insertions algorithm
+
+        Can both build a solution from scratch, as well as improve a given solution.
+
+        Args:
+            itr (`int`, optional): Seed to use in rng. Defaults to 30.
+            foundSolution (`Solution`, optional): Already found solution. Defaults to None.
+
+        Returns:
+            Solution: Solution found with algorithm
+        """
+        solution = Solution()
+        if foundSolution:
+            solution.routes = foundSolution.routes
+        else:
+            solution.routes.append(Route(self.depot, self.capacity, self.duration))
+        routesChecked = 0
+            
+        while routesChecked < 6:
+            rt = solution.routes[routesChecked]
+
+            candidate = self.FindBestInsertion(solution.routes, itr)
+            if candidate:  # Found insertion
+                insertCust = candidate.customer
+                rt = candidate.route
+                pos = candidate.insertionPosition
+                # Apply insertion
+                candidate.customer.isRouted = True
+                rt.sequenceOfNodes.insert(pos, insertCust)
+                rt.load += insertCust.demand
+                rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
+                rt.profit += insertCust.profit
+            else:  # No possible insertion
+                solution.profit += rt.profit
+                solution.duration += rt.travelled
+                routesChecked += 1
+                if len(solution.routes) < 6:
+                    solution.routes.append(Route(self.depot, self.capacity, self.duration))
+
+        return solution
+
+    def FindBestInsertion(self, routes: list[Route], itr) -> RandomCandidate:
+        rng = random.Random(itr)
+        rcl: list[RandomCandidate] = []
+        for cust in self.customers:
+            if cust.isRouted:
+                continue
+
+            for route in routes:
+
+                # Check capacity constraint & PART of time constraint
+                if route.load + cust.demand <= route.capacity and \
+                    cust.service_time + route.travelled <= route.duration:
+
+                    for pos in range(len(route.sequenceOfNodes) - 1):
+                        A: Node = route.sequenceOfNodes[pos]
+                        B: Node = route.sequenceOfNodes[pos + 1]
+
+                        
+                        costAdded = self.distanceMatrix[A.id][cust.id] + \
+                            self.distanceMatrix[cust.id][B.id] + cust.service_time
+                        costRemoved = self.distanceMatrix[A.id][B.id]
+                        Dc = costAdded - costRemoved
+
+                        # Check time constraint fully
+                        if route.travelled + Dc > route.duration:
+                            continue
+
+                        Dp = cust.profit
+                        trialProfit = Dp / math.pow(Dc, 0.6)
+
+                        candidate = RandomCandidate(cust, trialProfit, route, pos + 1)
+                        # Update rcl list
+                        if len(rcl) <= self.rcl_size:
+                            rcl.append(candidate)
+                            rcl.sort(key=lambda x: x.trialProfit)
+                        elif candidate.trialProfit > rcl[0].trialProfit - 0.001:
+                            rcl.pop(0)
+                            rcl.append(candidate)
+                            rcl.sort(key=lambda x: x.trialProfit)
+        if len(rcl) == 0:
+            return None  # No fit candidates left
+
+        # Choose a candidate randomly
+        candidateIndex = rng.randint(0, len(rcl) - 1)
+        return rcl[candidateIndex]
