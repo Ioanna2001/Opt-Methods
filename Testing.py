@@ -36,6 +36,17 @@ def ReportSolution(name, solution, allNodes):
     SolDrawer.draw(name, solution, allNodes)
     print("Total profit:", solution.profit)
 
+def exportSolution(name, solution):
+    with open(name  + '.txt', 'w') as f:
+        f.write("Total Profit\n")
+        f.write(str(int(solution.profit)) + "\n")
+        for i in range(len(solution.routes)):
+            f.write("Route " + str(i + 1) + "\n")
+            for node in solution.routes[i].sequenceOfNodes:
+                f.write(str(node.id) + " ")
+            if (i < len(solution.routes) - 1):
+                f.write("\n")
+
 class SolDrawer:
     @staticmethod
     def get_cmap(n):

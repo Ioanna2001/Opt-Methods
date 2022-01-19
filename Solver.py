@@ -132,6 +132,7 @@ class Solver:
         print("Overall Best")
         self.overallBestSol = copy.deepcopy(self.sol)
         ReportSolution("Overall", self.overallBestSol, self.allNodes)
+        exportSolution("solution", self.overallBestSol)
         return self.sol
 
     def NearestNeighbor(self, itr=30) -> Solution:
