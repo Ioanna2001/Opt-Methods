@@ -201,17 +201,22 @@ class Solver:
         Returns:
             Solution: Solution found with algorithm
         """
+        pool = set(self.customers)
         solution = Solution()
+
         if foundSolution:
+            routedCustomers = set().union(*foundSolution.routes)
+            pool = pool.difference(routedCustomers)
             solution.routes = foundSolution.routes
         else:
             solution.routes.append(Route(self.depot, self.capacity, self.duration))
+
         routesChecked = 0
             
         while routesChecked < 6:
             rt = solution.routes[routesChecked]
 
-            candidate = self.FindBestInsertion(solution.routes, itr)
+            candidate = self.FindBestInsertion(pool, solution.routes, itr)
             if candidate:  # Found insertion
                 insertCust = candidate.customer
                 rt = candidate.route
@@ -222,6 +227,7 @@ class Solver:
                 rt.load += insertCust.demand
                 rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
                 rt.profit += insertCust.profit
+                pool.remove(insertCust)
             else:  # No possible insertion
                 solution.profit += rt.profit
                 solution.duration += rt.travelled
@@ -231,12 +237,10 @@ class Solver:
 
         return solution
 
-    def FindBestInsertion(self, routes: list[Route], itr) -> RandomCandidate:
+    def FindBestInsertion(self, pool: set[Node], routes: list[Route], itr) -> RandomCandidate:
         rng = random.Random(itr)
         rcl: list[RandomCandidate] = []
-        for cust in self.customers:
-            if cust.isRouted:
-                continue
+        for cust in pool:
 
             for route in routes:
 
