@@ -1,4 +1,4 @@
-import random, copy
+import random, copy, numpy as np
 
 from Model import *
 from Utils import *
@@ -139,7 +139,7 @@ class Solver:
         solution.routes.append(Route(self.depot, self.capacity, self.duration))
         pool = copy.deepcopy(self.customers)
 
-        while len(solution.routes) <= 6 and pool:
+        while len(solution.routes) <= 6:
             rt = solution.routes[-1]
 
             insertCust = self.FindBestNN(pool, rt, itr)
@@ -171,7 +171,7 @@ class Solver:
                 trialProfit = cust.profit / \
                     math.pow(CalculateRouteDuration(self.distanceMatrix, route, cust), 0.9)
                 
-                candidate = RandomCandidate(cust, trialProfit)
+                candidate = RandomCandidate(cust, trialProfit, route, route.sequenceOfNodes[-1])
 
                 # Update rcl list
                 if len(rcl) <= self.rcl_size:
