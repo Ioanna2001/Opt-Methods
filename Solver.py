@@ -141,7 +141,8 @@ class Solver:
         solution.routes.append(Route(self.depot, self.capacity, self.duration))
         pool = copy.deepcopy(self.customers)
 
-        while len(solution.routes) <= 6:
+        vehiclesUsed = 1
+        while vehiclesUsed <= 6:
             rt = solution.routes[-1]
 
             insertCust = self.FindBestNN(pool, rt, itr)
@@ -155,11 +156,12 @@ class Solver:
                 pool.remove(insertCust)
 
             else:
-                solution.routes.append(Route(self.depot, self.capacity, self.duration))
                 solution.profit += rt.profit
                 solution.duration += rt.travelled
+                vehiclesUsed += 1
+                if vehiclesUsed < 6:
+                    solution.routes.append(Route(self.depot, self.capacity, self.duration))
 
-        solution.routes.pop()
         return solution 
 
     def FindBestNN(self, pool: list[Node], route: Route, itr) -> Node:
@@ -179,7 +181,7 @@ class Solver:
                 if len(rcl) <= self.rcl_size:
                     rcl.append(candidate)
                     rcl.sort(key=lambda x: x.trialProfit)
-                elif candidate.trialProfit > rcl[0].trialProfit:
+                elif candidate.trialProfit > rcl[0].trialProfit - 0.001:
                     rcl.pop(0)
                     rcl.append(candidate)
                     rcl.sort(key=lambda x: x.trialProfit)
