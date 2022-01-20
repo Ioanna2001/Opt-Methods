@@ -31,3 +31,4 @@ MANIFEST
 
 # Solution .txt files
 *.txt
+!Instance.txt
