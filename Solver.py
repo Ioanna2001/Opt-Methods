@@ -112,34 +112,33 @@ class Solver:
         self.constraints = {"capacity": self.capacity, "duration": self.duration, "vehicles": self.vehicles}
         self.sol: Solution = None
         self.overallBestSol: Solution = None
-        self.rcl_size = 1
+        self.rcl_size = 3
 
     def solve(self):
         for seed in range(10, 60, 10):
-            self.sol = self.MinimumInsertions(itr=seed)
-            if self.overallBestSol == None or self.overallBestSol.profit < self.sol.profit:
-                self.overallBestSol = copy.deepcopy(self.sol)
+            sol = self.MinimumInsertions(itr=seed, foundSolution=None)
+            if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
+                self.overallBestSol = copy.copy(sol)
         ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
         print()
         print("MinInsertions")
-        self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
+        self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
         print("duration before vns")
-        print(self.sol.duration)
+        print(self.overallBestSol.duration)
         self.overallBestSol = VNS(self.overallBestSol, 0, self.distanceMatrix)
         print("duration after vns")
-        self.sol.duration = CalculateTotalDuration(self.distanceMatrix, self.sol)
-        print(self.sol.duration)
+        self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
+        print(self.overallBestSol.duration)
         print()
         print("Overall Best")
-        self.overallBestSol = copy.deepcopy(self.sol)
         ReportSolution("Overall", self.overallBestSol, self.allNodes)
         exportSolution("solution", self.overallBestSol)
-        return self.sol
+        return self.overallBestSol
 
     def NearestNeighbor(self, itr=30) -> Solution:
         solution = Solution()
         solution.routes.append(Route(self.depot, self.capacity, self.duration))
-        pool = copy.deepcopy(self.customers)
+        pool = set(self.customers)
 
         vehiclesUsed = 1
         while vehiclesUsed <= 6:
@@ -159,7 +158,7 @@ class Solver:
                 solution.profit += rt.profit
                 solution.duration += rt.travelled
                 vehiclesUsed += 1
-                if vehiclesUsed < 6:
+                if len(solution.routes) < 6:
                     solution.routes.append(Route(self.depot, self.capacity, self.duration))
 
         return solution 
@@ -209,16 +208,15 @@ class Solver:
         solution = Solution()
 
         if foundSolution:
-            routedCustomers = set().union(*foundSolution.routes)
+            sequences = list(map(lambda x: x.sequenceOfNodes, foundSolution.routes))
+            routedCustomers = set().union(*sequences)
             pool = pool.difference(routedCustomers)
-            solution.routes = foundSolution.routes
+            solution.routes.extend(foundSolution.routes)
         else:
             solution.routes.append(Route(self.depot, self.capacity, self.duration))
 
-        routesChecked = 0
-            
-        while routesChecked < 6:
-            rt = solution.routes[routesChecked]
+        termination = False
+        while not termination:
 
             candidate = self.FindBestInsertion(pool, solution.routes, itr)
             if candidate:  # Found insertion
@@ -226,18 +224,21 @@ class Solver:
                 rt = candidate.route
                 pos = candidate.insertionPosition
                 # Apply insertion
-                candidate.customer.isRouted = True
                 rt.sequenceOfNodes.insert(pos, insertCust)
                 rt.load += insertCust.demand
                 rt.travelled = CalculateTravelledTime(self.distanceMatrix, rt)
                 rt.profit += insertCust.profit
                 pool.remove(insertCust)
             else:  # No possible insertion
-                solution.profit += rt.profit
-                solution.duration += rt.travelled
-                routesChecked += 1
                 if len(solution.routes) < 6:
                     solution.routes.append(Route(self.depot, self.capacity, self.duration))
+                else:
+                    termination = True
+
+
+        for r in solution.routes:
+            solution.duration += r.travelled
+            solution.profit += r.profit
 
         return solution
 
@@ -267,7 +268,7 @@ class Solver:
                             continue
 
                         Dp = cust.profit
-                        trialProfit = Dp / math.pow(Dc, 0.6)
+                        trialProfit = math.pow(Dp, 1) / math.pow(Dc, 0.6)
 
                         candidate = RandomCandidate(cust, trialProfit, route, pos + 1)
                         # Update rcl list
