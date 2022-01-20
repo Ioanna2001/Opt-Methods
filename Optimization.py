@@ -325,19 +325,22 @@ class LocalSearch:
                         if rt1 == rt2:
                             if nodeInd1 == 0 and nodeInd2 == len(rt1.sequenceOfNodes) - 2:
                                 continue
+
                             durAdded = self.distanceMatrix[A.id][K.id] + self.distanceMatrix[B.id][L.id]
                             durRemoved = self.distanceMatrix[A.id][B.id] + self.distanceMatrix[K.id][L.id]
                             moveDur = durAdded - durRemoved
 
                         else:
-                            #TODO calculate moveDur when rt1 != rt2
                             if nodeInd1 == 0 and nodeInd2 == 0:
                                 continue
                             if nodeInd1 == len(rt1.sequenceOfNodes) - 2 and nodeInd2 == len(rt2.sequenceOfNodes) - 2:
                                 continue
-
-                            if CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
+                            if CapacityOrDurationIsViolated(self.distanceMatrix, rt1, nodeInd1, rt2, nodeInd2):
                                 continue
+
+                            durAdded = self.distanceMatrix[A.id][K.id] + self.distanceMatrix[B.id][L.id]
+                            durRemoved = self.distanceMatrix[A.id][B.id] + self.distanceMatrix[K.id][L.id]
+                            moveDur = durAdded - durRemoved
 
                         allto = TwoOptMove()
                         allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost)
@@ -409,29 +412,19 @@ class LocalSearch:
             print('Cost Issue')
         '''
 
-    def ApplyTwoOptMove(self): #apply to durations
+    def ApplyTwoOptMove(self):
         top = self.twoOptMove
 
-        rt1: Route = self.solution.routes[top.positionOfFirstRoute]
-        rt2: Route = self.solution.routes[top.positionOfSecondRoute]
+        rt1: Route = self.initialSolution.routes[top.positionOfFirstRoute]
+        rt2: Route = self.initialSolution.routes[top.positionOfSecondRoute]
 
         if rt1 == rt2:
-            # reverses the nodes in the segment [positionOfFirstNode + 1,  top.positionOfSecondNode]
             reversedSegment = reversed(rt1.sequenceOfNodes[top.positionOfFirstNode + 1: top.positionOfSecondNode + 1])
-            # lst = list(reversedSegment)
-            # lst2 = list(reversedSegment)
             rt1.sequenceOfNodes[top.positionOfFirstNode + 1: top.positionOfSecondNode + 1] = reversedSegment
-
-            # reversedSegmentList = list(reversed(rt1.sequenceOfNodes[top.positionOfFirstNode + 1: top.positionOfSecondNode + 1]))
-            # rt1.sequenceOfNodes[top.positionOfFirstNode + 1: top.positionOfSecondNode + 1] = reversedSegmentList
-
-            rt1.cost += top.moveCost
+            rt1.duration += top.moveDur
 
         else:
-            # slice with the nodes from position top.positionOfFirstNode + 1 onwards
             relocatedSegmentOfRt1 = rt1.sequenceOfNodes[top.positionOfFirstNode + 1:]
-
-            # slice with the nodes from position top.positionOfFirstNode + 1 onwards
             relocatedSegmentOfRt2 = rt2.sequenceOfNodes[top.positionOfSecondNode + 1:]
 
             del rt1.sequenceOfNodes[top.positionOfFirstNode + 1:]
@@ -440,10 +433,10 @@ class LocalSearch:
             rt1.sequenceOfNodes.extend(relocatedSegmentOfRt2)
             rt2.sequenceOfNodes.extend(relocatedSegmentOfRt1)
 
-            UpdateRouteCostAndLoad(self.distanceMatrix, rt1)
-            UpdateRouteCostAndLoad(self.distanceMatrix, rt2)
+            UpdateRouteLoadDurAndProfit(self.distanceMatrix, rt1)
+            UpdateRouteLoadDurAndProfit(self.distanceMatrix, rt2)
 
-        self.solution.cost += top.moveCost
+        self.optimizedSolution.duration += top.moveDur
 
     def run(self):
 

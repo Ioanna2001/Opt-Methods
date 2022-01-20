@@ -54,43 +54,70 @@ def CalculateTotalDuration(distanceMatrix, solution) -> float:
         dur += CalculateTravelledTime(distanceMatrix, rt)
     return dur
 
-def UpdateRouteCostAndLoad(distanceMatrix: list[int], rt: Route): # update root duration
+def UpdateRouteLoadDurAndProfit(distanceMatrix: list[int], rt: Route):
     """Calculates and updates route's cost and load
-
-    Given a specific route, calculates total load and cost
-
+    Given a specific route, calculates total load, duration(travelled time) and profit
     Args:
         distanceMatrix `list[int]`: List representing a matrix of all node distances
         rt `Route`: Specified route
     """
-    tc = rt.sequenceOfNodes[0].service_time
-    tl = 0
+    totalDuration = rt.sequenceOfNodes[0].service_time
+    totalLoad = 0
+    totalProfit = 0
     for i in range(0, len(rt.sequenceOfNodes) - 1):
         A = rt.sequenceOfNodes[i]
         B = rt.sequenceOfNodes[i + 1]
-        tc += distanceMatrix[A.id][B.id] #change to customers profit
-        tc += B.service_time
-        tl += A.demand
-    rt.load = tl
-    rt.travelled = tc
+        totalLoad += A.demand
+        totalDuration += distanceMatrix[A.id][B.id]
+        totalDuration += B.service_time
+        totalProfit += A.profit
+    rt.load = totalLoad
+    rt.travelled = totalDuration
+    rt.profit = totalProfit
 
-def CapacityIsViolated(rt1: Route, nodeInd1: int, rt2: Route, nodeInd2: int) -> bool:
-    # No idea why this is needed
+def CapacityOrDurationIsViolated(distanceMatrix: list[int], rt1: Route, nodeInd1: int, rt2: Route, nodeInd2: int) -> bool:
+    """Checks if 2-opt move is going to violate Capacity or Duration restrictions
+    
+    Given two routes and two nodes check if applying 2-opt move is
+     going to violate Capacity or Duration restrictions on either root
+    Args:
+        distanceMatrix `list[int]`: List representing a matrix of all node distances
+        rt1 `Route`: Route 1
+        nodeInd1 `int`: Node representing where the first route is going to split
+        rt2 `Route`: Route 2
+        nodeInd2 `int`: Node representing where the second route is going to split
+    Returns:
+        boolean: True, if capacity restrictions or duration restrictions are violated
+    """
+    rt1Duration = rt1.duration - distanceMatrix[rt1.sequenceOfNodes[nodeInd1]][rt1.sequenceOfNodes[nodeInd1 + 1]]
+    rt1FirstSegmentDuration = 0
     rt1FirstSegmentLoad = 0
-    for i in range(0, nodeInd1 + 1):
-        n = rt1.sequenceOfNodes[i]
-        rt1FirstSegmentLoad += n.demand
+    for i in range(0, nodeInd1):
+        A = rt1.sequenceOfNodes[i]
+        B = rt1.sequenceOfNodes[i + 1]
+        rt1FirstSegmentDuration += distanceMatrix[A.id][B.id]
+        rt1FirstSegmentDuration += B.service_time
+        rt1FirstSegmentLoad += B.demand
+
+    rt1SecondSegmentDuration = rt1Duration - rt1FirstSegmentDuration
     rt1SecondSegmentLoad = rt1.load - rt1FirstSegmentLoad
 
+    rt2Duration = rt2.duration - distanceMatrix[rt2.sequenceOfNodes[nodeInd2]][rt1.sequenceOfNodes[nodeInd2 + 1]]
+    rt2FirstSegmentDuration = 0
     rt2FirstSegmentLoad = 0
-    for i in range(0, nodeInd2 + 1):
-        n = rt2.sequenceOfNodes[i]
-        rt2FirstSegmentLoad += n.demand
+    for i in range(0, nodeInd2):
+        K = rt2.sequenceOfNodes[i]
+        L = rt2.sequenceOfNodes[i + 1]
+        rt2FirstSegmentDuration += distanceMatrix[K.id][L.id]
+        rt2FirstSegmentDuration += L.service_time
+        rt2FirstSegmentLoad += L.demand
+
+    rt2SecondSegmentDuration = rt2Duration - rt2FirstSegmentDuration
     rt2SecondSegmentLoad = rt2.load - rt2FirstSegmentLoad
 
-    if (rt1FirstSegmentLoad + rt2SecondSegmentLoad > rt1.capacity):
+    if (rt1FirstSegmentLoad + rt2SecondSegmentLoad > rt1.capacity) or (rt1FirstSegmentDuration + rt2SecondSegmentDuration > rt1.duration):
         return True
-    if (rt2FirstSegmentLoad + rt1SecondSegmentLoad > rt2.capacity):
+    if (rt2FirstSegmentLoad + rt1SecondSegmentLoad > rt2.capacity) or (rt2FirstSegmentDuration + rt1SecondSegmentDuration > rt2.duration):
         return True
 
 def CalculateRouteProfit(route: Route) -> int:
