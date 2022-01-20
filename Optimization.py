@@ -485,7 +485,7 @@ class LocalSearch:
       #      TestSolution(self.initialSolution)
 
             if (self.initialSolution.duration < self.optimizedSolution.duration):
-                self.optimizedSolution = copy.deepcopy(self.initialSolution)
+                self.optimizedSolution = copy.copy(self.initialSolution)
 
             self.localSearchIterator = self.localSearchIterator + 1
 
@@ -500,7 +500,7 @@ k: operator index
 '''
 def NeighbourhoodChange(s, ss, k: int):
     if ss.duration < s.duration:
-        s = copy.deepcopy(ss)
+        s = copy.copy(ss)
         k = 0
     else:
         k += 1
@@ -550,7 +550,7 @@ k: local search operator
 def BestImprovement(s, distanceMatrix, k: int):
     condition = True
     while (condition):
-        ss = copy.deepcopy(s)
+        ss = copy.copy(s)
         ls = LocalSearch(s, distanceMatrix, None, k)
         ls.run()
         s = ls.optimizedSolution
