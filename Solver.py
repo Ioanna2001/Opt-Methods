@@ -125,7 +125,7 @@ class Solver:
         self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
         print("duration before vns")
         print(self.overallBestSol.duration)
-        self.overallBestSol = VNS(self.overallBestSol, 0, self.distanceMatrix)
+        self.overallBestSol = VNS(self.overallBestSol, 1, self.distanceMatrix)
         print("duration after vns")
         self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
         print(self.overallBestSol.duration)

@@ -70,7 +70,7 @@ class SwapMove(object):
     positionOfSecondNode = None
     durChangeFirstRt = None
     durChangeSecondRt = None
-    moveDur = None
+    moveDur = 0
     
     def __init__(self):
         self.positionOfFirstRoute = None
@@ -79,7 +79,7 @@ class SwapMove(object):
         self.positionOfSecondNode = None
         self.durChangeFirstRt = None
         self.durChangeSecondRt = None
-        self.moveDur = 10**9
+        self.moveDur = 0
 
     def Initialize(self, rt1, rt2, nd1, nd2, dur1, dur2, mvd):
         """Full constructor
@@ -128,7 +128,7 @@ class TwoOptMove(object):
         self.positionOfSecondRoute = None
         self.positionOfFirstNode = None
         self.positionOfSecondNode = None
-        self.moveDur = 10**9
+        self.moveDur = 0
 
     def Initialize(self, positionOfFirstRoute, positionOfSecondRoute, positionOfFirstNode, positionOfSecondNode, moveDur):
         """Full constructor
@@ -259,7 +259,7 @@ class LocalSearch:
                         b2 = rt2.sequenceOfNodes[secondNodeIndex]
                         c2 = rt2.sequenceOfNodes[secondNodeIndex + 1]
 
-                        moveDur = None
+                        moveDistance = 0
                         durChangeFirstRoute = None
                         durChangeSecondRoute = None
 
@@ -269,14 +269,14 @@ class LocalSearch:
                                                 self.distanceMatrix[b2.id][c2.id] 
                                 durAdded = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][b1.id] + \
                                             self.distanceMatrix[b1.id][c2.id]  
-                                moveDur = durAdded - durRemoved
+                                moveDistance = durAdded - durRemoved
                             else:
 
                                 durRemoved1 = self.distanceMatrix[a1.id][b1.id] + self.distanceMatrix[b1.id][c1.id]
                                 durAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id]
                                 durRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id]
                                 durAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id]
-                                moveDur = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
+                                moveDistance = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
                         else:
                             if rt1.load - b1.demand + b2.demand > rt1.capacity:
                                 continue
@@ -287,21 +287,25 @@ class LocalSearch:
                             durAdded1 = self.distanceMatrix[a1.id][b2.id] + self.distanceMatrix[b2.id][c1.id] + b2.service_time
                             durChangeFirstRoute = durAdded1 - durRemoved1
 
-                            if rt1.duration + durChangeFirstRoute > rt1.duration:
+                            if rt1.travelled + durChangeFirstRoute > rt1.duration:
                                 continue
                             durRemoved2 = self.distanceMatrix[a2.id][b2.id] + self.distanceMatrix[b2.id][c2.id] + b2.service_time
                             durAdded2 = self.distanceMatrix[a2.id][b1.id] + self.distanceMatrix[b1.id][c2.id] + b1.service_time
                             durChangeSecondRoute = durAdded2 - durRemoved2
-
-                            if rt2.duration + durChangeSecondRoute > rt2.duration:
+                            moveDistance = durChangeSecondRoute + durChangeFirstRoute
+                            if rt2.travelled + durChangeSecondRoute > rt2.duration:
                                 continue
-
-                            moveDur = durAdded1 + durAdded2 - (durRemoved1 + durRemoved2)
-                        if moveDur < self.swapMove.moveDur:
+                        if moveDistance < 0:
+                            copys = SwapMove()
+                            copys.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
+                                            durChangeFirstRoute, durChangeSecondRoute, moveDistance)
+                            self.allSwapMoves.append(copys)
+                        if moveDistance < self.swapMove.moveDur:
                             self.swapMove.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
-                                                durChangeFirstRoute, durChangeSecondRoute, moveDur)
-                            self.allSwapMoves.append(self.swapMove)
+                                                durChangeFirstRoute, durChangeSecondRoute, moveDistance)
                             return self.swapMove
+        self.terminateSearch = True
+
 
 
     def FindBestTwoOptMove(self) -> TwoOptMove:
@@ -338,13 +342,12 @@ class LocalSearch:
 
                             if CapacityIsViolated(rt1, nodeInd1, rt2, nodeInd2):
                                 continue
-
-                        allto = TwoOptMove()
-                        allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost)
-                        self.allTwoOptMoves.append(allto)
                         
                         if moveDur < self.twoOptMove.moveDur:
-                            return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
+                            self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
+                            self.allTwoOptMoves.append(self.twoOptMove)
+                            return self.twoOptMove
+        self.terminateSearch = True
 
     def ApplyRelocationMove(self):
 
@@ -526,11 +529,12 @@ def Shake(s, k: int, distanceMatrix):
     elif k == 1:
         solutions = ls.allSwapMoves
         indx = random.randint(0, len(solutions) - 1)
-        ls.swapMove = solutions[indx]
-        ls.ApplySwapMove()
-        ss = ls.optimizedSolution
+        lsInitial.swapMove = solutions[indx]
+        lsInitial.ApplySwapMove()
+        ss = lsInitial.optimizedSolution
     elif k == 2:
         solutions = ls.ApplyTwoOptMoves()
+        indx = random.randint(0, len(solutions) - 1)
         ls.twoOptMove = solutions[indx]
         ls.ApplyTwoOptMove()
         ss = ls.optimizedSolution
