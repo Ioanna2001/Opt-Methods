@@ -89,7 +89,7 @@ def CapacityOrDurationIsViolated(distanceMatrix: list[int], rt1: Route, nodeInd1
     Returns:
         boolean: True, if capacity restrictions or duration restrictions are violated
     """
-    rt1Duration = rt1.duration - distanceMatrix[rt1.sequenceOfNodes[nodeInd1]][rt1.sequenceOfNodes[nodeInd1 + 1]]
+    rt1Duration = rt1.duration - distanceMatrix[rt1.sequenceOfNodes[nodeInd1].id][rt1.sequenceOfNodes[nodeInd1 + 1].id]
     rt1FirstSegmentDuration = 0
     rt1FirstSegmentLoad = 0
     for i in range(0, nodeInd1):
@@ -102,7 +102,7 @@ def CapacityOrDurationIsViolated(distanceMatrix: list[int], rt1: Route, nodeInd1
     rt1SecondSegmentDuration = rt1Duration - rt1FirstSegmentDuration
     rt1SecondSegmentLoad = rt1.load - rt1FirstSegmentLoad
 
-    rt2Duration = rt2.duration - distanceMatrix[rt2.sequenceOfNodes[nodeInd2]][rt1.sequenceOfNodes[nodeInd2 + 1]]
+    rt2Duration = rt2.duration - distanceMatrix[rt2.sequenceOfNodes[nodeInd2].id][rt1.sequenceOfNodes[nodeInd2 + 1].id]
     rt2FirstSegmentDuration = 0
     rt2FirstSegmentLoad = 0
     for i in range(0, nodeInd2):
