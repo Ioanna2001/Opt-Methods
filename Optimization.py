@@ -1,5 +1,7 @@
 import copy, random
 
+import AdaptiveTuning as tune
+
 from Testing import TestSolution
 from Model import (Route, Node)
 from Utils import (AppendNodeDuration, CalculateTravelledTime, CalculateTotalDuration,
@@ -228,7 +230,8 @@ class LocalSearch:
                                               targetNodeIndex, originRtDurChange,
                                               targetRtDurChange, moveDur)
                             self.allRelocationMoves.append(copyrm)
-                        if (moveDur < self.relocationMove.moveDur):
+
+                        if (moveDur < self.relocationMove.moveDur + tune.precision):
                             self.terminateSearch = False
                             self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
@@ -331,7 +334,7 @@ class LocalSearch:
                             copyto = TwoOptMove()
                             copyto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
                             self.allTwoOptMoves.append(copyto)
-                        if moveDur < self.twoOptMove.moveDur:
+                        if moveDur < self.twoOptMove.moveDur + tune.precision:
                             return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
         self.terminateSearch = True
 

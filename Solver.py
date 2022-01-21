@@ -1,9 +1,12 @@
-import random, copy, numpy as np
+import random, copy
+
+import AdaptiveTuning as tune
 
 from Model import *
 from Utils import *
 from Testing import *
 from Optimization import *
+
 
 
 
@@ -112,16 +115,22 @@ class Solver:
         self.constraints = {"capacity": self.capacity, "duration": self.duration, "vehicles": self.vehicles}
         self.sol: Solution = None
         self.overallBestSol: Solution = None
-        self.rcl_size = 3
+        self.rcl_size = tune.rclSize
 
     def solve(self):
+        bestNN = None
+        for seed in range(10, 60, 10):
+            sol = self.NearestNeighbor(itr=seed)
+            if bestNN == None or bestNN.profit < sol.profit:
+                bestNN = copy.copy(sol)
+        # ReportSolution("NearestNeighbor", bestNN, self.allNodes)            
         for seed in range(10, 60, 10):
             sol = self.MinimumInsertions(itr=seed, foundSolution=None)
             if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
                 self.overallBestSol = copy.copy(sol)
-        ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
-        print()
-        print("MinInsertions")
+        # ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
+        # print()
+        # print("MinInsertions")
         self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
         print("duration before vns")
         print(self.overallBestSol.duration)
@@ -129,14 +138,14 @@ class Solver:
         print("duration after vns")
         self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
         print(self.overallBestSol.duration)
-        print()
+        # print()
         for seed in range(10, 60, 10):
             sol = self.MinimumInsertions(itr=seed, foundSolution=self.overallBestSol)
             if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
                 self.overallBestSol = copy.copy(sol)
-        print("Overall Best")
-        ReportSolution("Overall", self.overallBestSol, self.allNodes)
-        exportSolution("solution", self.overallBestSol)
+        # print("Overall Best")
+        # ReportSolution("Overall", self.overallBestSol, self.allNodes)
+
         return self.overallBestSol
 
     def NearestNeighbor(self, itr=30) -> Solution:
@@ -175,8 +184,8 @@ class Solver:
                 AppendNodeDuration(self.distanceMatrix, route, cust) \
                 + route.travelled <= route.duration:
 
-                trialProfit = cust.profit / \
-                    math.pow(AppendNodeDuration(self.distanceMatrix, route, cust), 0.9)
+                trialProfit = math.pow(cust.profit, tune.nnNumerator) / \
+                    math.pow(AppendNodeDuration(self.distanceMatrix, route, cust), tune.nnDenominator)
                 
                 candidate = RandomCandidate(cust, trialProfit, route, route.sequenceOfNodes[-1])
 
@@ -184,7 +193,7 @@ class Solver:
                 if len(rcl) <= self.rcl_size:
                     rcl.append(candidate)
                     rcl.sort(key=lambda x: x.trialProfit)
-                elif candidate.trialProfit > rcl[0].trialProfit - 0.001:
+                elif candidate.trialProfit > rcl[0].trialProfit - tune.precision:
                     rcl.pop(0)
                     rcl.append(candidate)
                     rcl.sort(key=lambda x: x.trialProfit)
@@ -272,14 +281,14 @@ class Solver:
                             continue
 
                         Dp = cust.profit
-                        trialProfit = math.pow(Dp, 1) / math.pow(Dc, 0.6)
+                        trialProfit = math.pow(Dp, tune.minInsNumerator) / math.pow(Dc, tune.minInsDenominator)
 
                         candidate = RandomCandidate(cust, trialProfit, route, pos + 1)
                         # Update rcl list
                         if len(rcl) <= self.rcl_size:
                             rcl.append(candidate)
                             rcl.sort(key=lambda x: x.trialProfit)
-                        elif candidate.trialProfit > rcl[0].trialProfit - 0.001:
+                        elif candidate.trialProfit > rcl[0].trialProfit - tune.precision:
                             rcl.pop(0)
                             rcl.append(candidate)
                             rcl.sort(key=lambda x: x.trialProfit)
