@@ -101,8 +101,7 @@ def CapacityOrDurationIsViolated(distanceMatrix: list[int], rt1: Route, nodeInd1
 
     rt1SecondSegmentDuration = rt1Duration - rt1FirstSegmentDuration
     rt1SecondSegmentLoad = rt1.load - rt1FirstSegmentLoad
-
-    rt2Duration = rt2.duration - distanceMatrix[rt2.sequenceOfNodes[nodeInd2].id][rt1.sequenceOfNodes[nodeInd2 + 1].id]
+    rt2Duration = rt2.duration - distanceMatrix[rt2.sequenceOfNodes[nodeInd2].id][rt2.sequenceOfNodes[nodeInd2 + 1].id]
     rt2FirstSegmentDuration = 0
     rt2FirstSegmentLoad = 0
     for i in range(0, nodeInd2):

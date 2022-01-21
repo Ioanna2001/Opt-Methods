@@ -130,6 +130,10 @@ class Solver:
         self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
         print(self.overallBestSol.duration)
         print()
+        for seed in range(10, 60, 10):
+            sol = self.MinimumInsertions(itr=seed, foundSolution=self.overallBestSol)
+            if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
+                self.overallBestSol = copy.copy(sol)
         print("Overall Best")
         ReportSolution("Overall", self.overallBestSol, self.allNodes)
         exportSolution("solution", self.overallBestSol)
@@ -212,6 +216,7 @@ class Solver:
             routedCustomers = set().union(*sequences)
             pool = pool.difference(routedCustomers)
             solution.routes.extend(foundSolution.routes)
+
         else:
             solution.routes.append(Route(self.depot, self.capacity, self.duration))
 

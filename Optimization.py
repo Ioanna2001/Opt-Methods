@@ -19,7 +19,7 @@ class RelocationMove(object):
         - targetNodePosition: Destination position number of node
         - durChangeOriginRt: Change of time spent in original route after deletion of node
         - durChangeTargetRt: Change of time spent in target route after insertion of node
-        - moveDistance: Change in distance covered
+        - moveDur: Change in distance covered
     """
 
     def __init__(self):
@@ -33,7 +33,7 @@ class RelocationMove(object):
         self.targetNodePosition = None
         self.durChangeOriginRt = None
         self.durChangeTargetRt = None
-        self.moveDistance = -1
+        self.moveDur = 0
 
     def Initialize(self, rt1, rt2, nd1, nd2, dur1, dur2, mvd):
         """Full constructor
@@ -47,7 +47,7 @@ class RelocationMove(object):
         - targetNodePosition: `int`
         - durChangeOriginRt: `int`
         - durChangeTargetRt: `int`
-        - moveDistance: `float`
+        - moveDur: `float`
         """
         self.originRoutePosition = rt1
         self.targetRoutePosition = rt2
@@ -55,7 +55,7 @@ class RelocationMove(object):
         self.targetNodePosition = nd2
         self.durChangeOriginRt = dur1
         self.durChangeTargetRt = dur2
-        self.moveDistance = mvd
+        self.moveDur = mvd
 
 
 class SwapMove(object):
@@ -70,7 +70,7 @@ class SwapMove(object):
     positionOfSecondNode = None
     durChangeFirstRt = None
     durChangeSecondRt = None
-    moveDur = None
+    moveDur = 0
     
     def __init__(self):
         self.positionOfFirstRoute = None
@@ -224,19 +224,19 @@ class LocalSearch:
                         targetRtDurChange = self.distanceMatrix[F.id][B.id] + self.distanceMatrix[B.id][G.id] - \
                                                 self.distanceMatrix[F.id][G.id] + B.service_time
 
-                        moveDistance = distanceAdded - distanceRemoved
-                        if moveDistance < 0:
+                        moveDur = distanceAdded - distanceRemoved
+                        if moveDur < 0:
                             copyrm = RelocationMove()
                             copyrm.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
-                                                                targetRtDurChange, moveDistance)
+                                                                targetRtDurChange, moveDur)
                             self.allRelocationMoves.append(copyrm)
 
-                        if (moveDistance < self.relocationMove.moveDistance - 0.01):
+                        if (moveDur < self.relocationMove.moveDur - 0.01):
                             self.terminateSearch = False
                             self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
-                                                                targetRtDurChange, moveDistance)
+                                                                targetRtDurChange, moveDur)
                             return self.relocationMove
         self.terminateSearch = True
 
@@ -320,7 +320,7 @@ class LocalSearch:
                         start2 = nodeInd1 + 2
 
                     for nodeInd2 in range(start2, len(rt2.sequenceOfNodes) - 1):
-                        moveCost = 10 ** 9
+                        moveDur = 0
 
                         A = rt1.sequenceOfNodes[nodeInd1]
                         B = rt1.sequenceOfNodes[nodeInd1 + 1]
@@ -348,12 +348,12 @@ class LocalSearch:
                             moveDur = durAdded - durRemoved
                         if moveDur < 0:
                             allto = TwoOptMove()
-                            allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveCost)
+                            allto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
                             self.allTwoOptMoves.append(allto)
                         
                         if moveDur < self.twoOptMove.moveDur:
                             return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
-        self.terminateSearch =  True
+        self.terminateSearch = True
 
     def ApplyRelocationMove(self):
 
@@ -373,7 +373,7 @@ class LocalSearch:
             else:
                 targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
 
-            originRt.travelled += rm.moveDistance
+            originRt.travelled += rm.moveDur
         else:
             del originRt.sequenceOfNodes[rm.originNodePosition]
             targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
@@ -386,7 +386,7 @@ class LocalSearch:
 
         '''
          # debuggingOnly
-                if abs((newDuration - oldDuration) - rm.moveDistance) > 0.0001:
+                if abs((newDuration - oldDuration) - rm.moveDur) > 0.0001:
             print('Cost Issue')
         
         '''
@@ -455,7 +455,7 @@ class LocalSearch:
                 self.FindBestRelocationMove()
 
                 if self.relocationMove.originRoutePosition is not None:
-                    if self.relocationMove.moveDistance < 0:
+                    if self.relocationMove.moveDur < 0:
                         self.ApplyRelocationMove()
                     else:
                         self.terminateSearch = True
@@ -486,15 +486,16 @@ class LocalSearch:
             self.localSearchIterator = self.localSearchIterator + 1
 
         return self.optimizedSolution
-'''
-Method to change neighbourhood based on local search operators
 
-Parameters:
-s: Initial solution
-ss: test solution
-k: operator index 
-'''
 def NeighbourhoodChange(s, ss, k: int):
+    '''
+    Method to change neighbourhood based on local search operators
+
+    Parameters:
+    s: Initial solution
+    ss: test solution
+    k: operator index
+    '''
     if ss.duration < s.duration:
         s = copy.deepcopy(ss)
         k = 0
@@ -502,15 +503,15 @@ def NeighbourhoodChange(s, ss, k: int):
         k += 1
     return s, k
 
-'''
-Method to pick random solution generated by k local search operator
-
-Parameters:
-s: initial solution
-k: local search operator
-'''
 def Shake(s, k: int, distanceMatrix):
-    random.seed(10)
+    '''
+    Method to pick random solution generated by k local search operator
+
+    Parameters:
+    s: initial solution
+    k: local search operator
+    '''
+    random.seed(30)
     ls = LocalSearch(s, distanceMatrix, None, k)
     lsInitial = LocalSearch(s, distanceMatrix, None, k)
     ls.run()
@@ -529,22 +530,22 @@ def Shake(s, k: int, distanceMatrix):
         lsInitial.ApplySwapMove()
         ss = lsInitial.optimizedSolution
     elif k == 2:
-        solutions = ls.ApplyTwoOptMoves()
+        solutions = ls.allTwoOptMoves
         indx = random.randint(0, len(solutions) - 1)
         lsInitial.twoOptMove = solutions[indx]
         lsInitial.ApplyTwoOptMove()
         ss = lsInitial.optimizedSolution
     return ss
 
-'''
-Method to find steepest descent for k local search operator
-
-Parameters:
-s: initial solution
-distanceMatrix: distance matrix for all nodes
-k: local search operator
-'''
 def BestImprovement(s, distanceMatrix, k: int):
+    '''
+    Method to find steepest descent for k local search operator
+
+    Parameters:
+    s: initial solution
+    distanceMatrix: distance matrix for all nodes
+    k: local search operator
+    '''
     condition = True
     while (condition):
         ss = copy.deepcopy(s)
@@ -555,15 +556,15 @@ def BestImprovement(s, distanceMatrix, k: int):
             break
     return s
 
-'''
-Method to apply Basic VNS
-
-Parameters:
-s: initial solution
-kmax: count of local search operators
-distanceMatrix: distance matrix for all nodes 
-'''
 def VNS(s, kmax: int, distanceMatrix):
+    '''
+    Method to apply Basic VNS
+
+    Parameters:
+    s: initial solution
+    kmax: count of local search operators
+    distanceMatrix: distance matrix for all nodes
+    '''
     k = 0
     condition = True
     while (condition):
