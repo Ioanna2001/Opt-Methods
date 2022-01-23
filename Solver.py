@@ -125,31 +125,28 @@ class Solver:
             if bestNN == None or bestNN.profit < sol.profit:
                 bestNN = copy.copy(sol)
         '''
-        self.customers = CustomersNotRouted(self.customers)
-        # ReportSolution("NearestNeighbor", bestNN, self.allNodes)            
+        # ReportSolution("NearestNeighbor", bestNN, self.allNodes)
         for seed in range(10, 60, 10):
             sol = self.MinimumInsertions(itr=seed, foundSolution=None)
             if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
                 self.overallBestSol = copy.copy(sol)
-        # ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
-        # print()
-        # print("MinInsertions")
-        self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
-        print("duration before vns")
-        print(self.overallBestSol.duration)
-        self.overallBestSol = VNS(self.overallBestSol, 2, self.distanceMatrix)
-        print("duration after vns")
-        self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
-        print(self.overallBestSol.duration)
-        # print()
-        for seed in range(10, 60, 10):
-            sol = self.MinimumInsertions(itr=seed, foundSolution=self.overallBestSol)
-            if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
-                self.overallBestSol = copy.copy(sol)
-            if self.overallBestSol.profit > 1200 :
-                return self.overallBestSol
+        #    ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
+            # print()
+            # print("MinInsertions")
+            self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
+            print("profit before vns")
+            print(self.overallBestSol.profit)
+            self.overallBestSol = VNS(self.overallBestSol, 2, self.distanceMatrix)
+            self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
+            # print()
+            for seed in range(10, 60, 10):
+                sol = self.MinimumInsertions(itr=seed, foundSolution=self.overallBestSol)
+                if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
+                    self.overallBestSol = copy.copy(sol)
+            print("profit after vns")
+            print(self.overallBestSol.profit)
         # print("Overall Best")
-        # ReportSolution("Overall", self.overallBestSol, self.allNodes)
+    #    ReportSolution("Overall", self.overallBestSol, self.allNodes)
 
         return self.overallBestSol
 

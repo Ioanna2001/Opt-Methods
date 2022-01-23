@@ -22,8 +22,6 @@ class Node:
         self.demand = int(demand)
         self.service_time = int(service_time)
         self.profit = int(profit)
-        self.isRouted = False
-
 
 class Model:
     """Class that represents model of problem

@@ -9,7 +9,7 @@ nnNumerator = 1
 precision = 0.01
 exponents = [x for x in np.arange(0.1, 1.5, 0.1)]
 precisionList = [0.1, 0.01, 0.001, 0.0001]
-rclSize = 3
+rclSize = 4
 tuningIterator = 0
 noTuningLeft = False
 
