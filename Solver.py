@@ -143,6 +143,8 @@ class Solver:
             sol = self.MinimumInsertions(itr=seed, foundSolution=self.overallBestSol)
             if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
                 self.overallBestSol = copy.copy(sol)
+            if self.overallBestSol.profit > 1200 :
+                return self.overallBestSol
         # print("Overall Best")
         # ReportSolution("Overall", self.overallBestSol, self.allNodes)
 
@@ -235,6 +237,7 @@ class Solver:
             candidate = self.FindBestInsertion(pool, solution.routes, itr)
             if candidate:  # Found insertion
                 insertCust = candidate.customer
+                insertCust.isRouted = True
                 rt = candidate.route
                 pos = candidate.insertionPosition
                 # Apply insertion
@@ -259,7 +262,8 @@ class Solver:
         rng = random.Random(itr)
         rcl: list[RandomCandidate] = []
         for cust in pool:
-
+            if cust.isRouted:
+                continue
             for route in routes:
 
                 # Check capacity constraint & PART of time constraint
