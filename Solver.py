@@ -118,11 +118,14 @@ class Solver:
         self.rcl_size = tune.rclSize
 
     def solve(self):
+        '''
         bestNN = None
         for seed in range(10, 60, 10):
             sol = self.NearestNeighbor(itr=seed)
             if bestNN == None or bestNN.profit < sol.profit:
                 bestNN = copy.copy(sol)
+        '''
+        self.customers = CustomersNotRouted(self.customers)
         # ReportSolution("NearestNeighbor", bestNN, self.allNodes)            
         for seed in range(10, 60, 10):
             sol = self.MinimumInsertions(itr=seed, foundSolution=None)
@@ -237,7 +240,6 @@ class Solver:
             candidate = self.FindBestInsertion(pool, solution.routes, itr)
             if candidate:  # Found insertion
                 insertCust = candidate.customer
-                insertCust.isRouted = True
                 rt = candidate.route
                 pos = candidate.insertionPosition
                 # Apply insertion
@@ -262,8 +264,6 @@ class Solver:
         rng = random.Random(itr)
         rcl: list[RandomCandidate] = []
         for cust in pool:
-            if cust.isRouted:
-                continue
             for route in routes:
 
                 # Check capacity constraint & PART of time constraint

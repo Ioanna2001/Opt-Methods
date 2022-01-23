@@ -41,6 +41,14 @@ def CalculateTravelledTime(distanceMatrix: list[int], rt: Route) -> float:
         travelled += rt.sequenceOfNodes[i + 1].service_time
     return travelled
 
+def CustomersNotRouted(customers: list[Node]):
+    '''Given a Nodes list sets all isRouted attributes to False
+    Args:
+        customers `list[Node]`: Models customer list
+    '''
+    for c in customers:
+        c.isRouted = False
+    return customers
 def GetLastOpenRoute(solution) -> int:
     if len(solution.routes) == 0:
         return None
