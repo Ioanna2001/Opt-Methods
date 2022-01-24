@@ -2,7 +2,7 @@ import time
 
 from Model import Model
 from Solver import *
-from AdaptiveTuning import noTuningLeft, TuneExponents
+from AdaptiveTuning import TuneExponents
 from Testing import exportSolution, ReportSolution
 import solution_checker
 
@@ -12,8 +12,9 @@ start = time.time()
 model = Model()
 model.build_model()
 bestSol = Solver(model).solve()
-while not noTuningLeft:
-    TuneExponents()
+termination = False
+while not termination:
+    termination = TuneExponents()
     sol: Solution = Solver(model).solve()
     if sol.profit > bestSol.profit:
         bestSol = copy.copy(sol)
