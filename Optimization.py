@@ -236,7 +236,7 @@ class LocalSearch:
                             self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
                                                                 targetRtDurChange, moveDur)
-                            return self.relocationMove
+                            self.relocationMove
         self.terminateSearch = True
 
     def FindBestSwapMove(self) -> SwapMove:
@@ -295,7 +295,7 @@ class LocalSearch:
                         if moveDur < self.swapMove.moveDur:
                             self.swapMove.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
                                                 durChangeFirstRoute, durChangeSecondRoute, moveDur)
-                            return self.swapMove
+                            self.swapMove
         self.terminateSearch = True
 
 
@@ -335,7 +335,7 @@ class LocalSearch:
                             copyto.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
                             self.allTwoOptMoves.append(copyto)
                         if moveDur < self.twoOptMove.moveDur + tune.precision:
-                            return self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
+                            self.twoOptMove.Initialize(rtInd1, rtInd2, nodeInd1, nodeInd2, moveDur)
         self.terminateSearch = True
 
     def ApplyRelocationMove(self):
@@ -531,13 +531,19 @@ def BestImprovement(s, distanceMatrix, k: int):
     k: local search operator
     '''
     condition = True
+    counter = 0
     while (condition):
         ss = copy.copy(s)
         ls = LocalSearch(s, distanceMatrix, None, k)
         ls.run()
         s = ls.optimizedSolution
+        counter += 1
+        if s.profit >= 1026:
+            ys = True
         if (s.duration >= ss.duration):
             break
+        elif counter > 20:
+            return ss
     return s
 
 def VNS(s, kmax: int, distanceMatrix):
