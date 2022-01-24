@@ -144,10 +144,6 @@ class Solver:
                 if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
                     self.overallBestSol = copy.copy(sol)
             print("profit after vns")
-            print(self.overallBestSol.profit)
-        # print("Overall Best")
-    #    ReportSolution("Overall", self.overallBestSol, self.allNodes)
-
         return self.overallBestSol
 
     def NearestNeighbor(self, itr=30) -> Solution:

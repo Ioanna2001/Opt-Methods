@@ -209,17 +209,22 @@ class LocalSearch:
                         F = rt2.sequenceOfNodes[targetNodeIndex]
                         G = rt2.sequenceOfNodes[targetNodeIndex + 1]
                         if rt1 != rt2:
+                            # Check load constraint & PART of time constraint
                             if rt2.load + B.demand > rt2.capacity or \
-                                    rt2.travelled + AppendNodeDuration(self.distanceMatrix, rt2, B) > rt2.duration:
+                                    rt2.travelled + B.service_time > rt2.duration:
                                 continue
+                        targetRtDurChange = self.distanceMatrix[F.id][B.id] + self.distanceMatrix[B.id][G.id] - \
+                                                self.distanceMatrix[F.id][G.id] + B.service_time
+                        # Check time constraint FULLY        
+                        if rt1 != rt2 and rt2.travelled + targetRtDurChange > rt2.duration:
+                            continue                  
                         distanceAdded = self.distanceMatrix[A.id][C.id] + self.distanceMatrix[F.id][B.id] + \
                                     self.distanceMatrix[B.id][G.id]
                         distanceRemoved = self.distanceMatrix[A.id][B.id] + self.distanceMatrix[B.id][C.id] + \
                                         self.distanceMatrix[F.id][G.id]
                         originRtDurChange = self.distanceMatrix[A.id][C.id] - self.distanceMatrix[A.id][B.id] - \
                                                 self.distanceMatrix[B.id][C.id] - B.service_time
-                        targetRtDurChange = self.distanceMatrix[F.id][B.id] + self.distanceMatrix[B.id][G.id] - \
-                                                self.distanceMatrix[F.id][G.id] + B.service_time
+
                         moveDur = distanceAdded - distanceRemoved
                         if rt1 == rt2:
                             if rt1.travelled + moveDur > rt1.duration:
@@ -236,7 +241,6 @@ class LocalSearch:
                             self.relocationMove.Initialize(originRouteIndex, targetRouteIndex, originNodeIndex,
                                                                 targetNodeIndex, originRtDurChange,
                                                                 targetRtDurChange, moveDur)
-                            self.relocationMove
         self.terminateSearch = True
 
     def FindBestSwapMove(self) -> SwapMove:
@@ -295,7 +299,6 @@ class LocalSearch:
                         if moveDur < self.swapMove.moveDur:
                             self.swapMove.Initialize(firstRouteIndex, secondRouteIndex, firstNodeIndex, secondNodeIndex,
                                                 durChangeFirstRoute, durChangeSecondRoute, moveDur)
-                            self.swapMove
         self.terminateSearch = True
 
 
@@ -351,7 +354,7 @@ class LocalSearch:
                 targetRt.sequenceOfNodes.insert(rm.targetNodePosition, B)
             else:
                 targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
-            originRt.travelled += rm.moveDur
+            originRt.travelled = CalculateTravelledTime(self.distanceMatrix, originRt)
         else:
             del originRt.sequenceOfNodes[rm.originNodePosition]
             targetRt.sequenceOfNodes.insert(rm.targetNodePosition + 1, B)
@@ -380,10 +383,10 @@ class LocalSearch:
         rt1.sequenceOfNodes[sm.positionOfFirstNode] = b2
         rt2.sequenceOfNodes[sm.positionOfSecondNode] = b1
         if (rt1 == rt2):
-            rt1.duration += sm.moveDur
+            rt1.travelled = CalculateTravelledTime(self.distanceMatrix, rt1)
         else:
-            rt1.duration += sm.durChangeFirstRt
-            rt2.duration += sm.durChangeSecondRt
+            rt1.travelled += sm.durChangeFirstRt
+            rt2.travelled += sm.durChangeSecondRt
             rt1.load = rt1.load - b1.demand + b2.demand
             rt2.load = rt2.load + b1.demand - b2.demand
         newDuration = CalculateTotalDuration(self.distanceMatrix, self.optimizedSolution)
@@ -403,7 +406,7 @@ class LocalSearch:
         if rt1 == rt2:
             reversedSegment = reversed(rt1.sequenceOfNodes[top.positionOfFirstNode + 1: top.positionOfSecondNode + 1])
             rt1.sequenceOfNodes[top.positionOfFirstNode + 1: top.positionOfSecondNode + 1] = reversedSegment
-            rt1.duration += top.moveDur
+            rt1.travelled = CalculateTravelledTime(self.distanceMatrix, rt1)
 
         else:
             relocatedSegmentOfRt1 = rt1.sequenceOfNodes[top.positionOfFirstNode + 1:]
@@ -538,11 +541,9 @@ def BestImprovement(s, distanceMatrix, k: int):
         ls.run()
         s = ls.optimizedSolution
         counter += 1
-        if s.profit >= 1026:
-            ys = True
         if (s.duration >= ss.duration):
             break
-        elif counter > 20:
+        else:
             return ss
     return s
 
