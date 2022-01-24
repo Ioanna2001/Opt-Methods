@@ -118,27 +118,15 @@ class Solver:
         self.rcl_size = tune.rclSize
 
     def solve(self):
-        '''
-        bestNN = None
-        for seed in range(10, 60, 10):
-            sol = self.NearestNeighbor(itr=seed)
-            if bestNN == None or bestNN.profit < sol.profit:
-                bestNN = copy.copy(sol)
-        '''
-        # ReportSolution("NearestNeighbor", bestNN, self.allNodes)
         for seed in range(10, 60, 10):
             sol = self.MinimumInsertions(itr=seed, foundSolution=None)
             if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:
                 self.overallBestSol = copy.copy(sol)
-        #    ReportSolution("MinInsertions", self.overallBestSol, self.allNodes)
-            # print()
-            # print("MinInsertions")
             self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
             print("profit before vns")
             print(self.overallBestSol.profit)
             self.overallBestSol = VNS(self.overallBestSol, 2, self.distanceMatrix)
             self.overallBestSol.duration = CalculateTotalDuration(self.distanceMatrix, self.overallBestSol)
-            # print()
             for seed in range(10, 60, 10):
                 sol = self.MinimumInsertions(itr=seed, foundSolution=self.overallBestSol)
                 if self.overallBestSol == None or self.overallBestSol.profit < sol.profit:

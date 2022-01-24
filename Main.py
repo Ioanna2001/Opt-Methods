@@ -18,7 +18,10 @@ while not terminate:
     sol: Solution = Solver(model).solve()
     if sol.profit > bestSol.profit:
         bestSol = copy.copy(sol)
-
+# TODO Unnecessary profit calculation
+bestSol.profit = 0
+for r in bestSol.routes:
+    bestSol.profit += CalculateRouteProfit(r)
 ReportSolution("OverallBestSolution", bestSol, model.allNodes)
 exportSolution("solution", bestSol)
 solution_checker.run()
