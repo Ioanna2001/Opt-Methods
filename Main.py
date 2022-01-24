@@ -12,8 +12,9 @@ start = time.time()
 model = Model()
 model.build_model()
 bestSol = Solver(model).solve()
-while not noTuningLeft:
-    TuneExponents()
+terminate = False
+while not terminate:
+    terminate = TuneExponents()
     sol: Solution = Solver(model).solve()
     if sol.profit > bestSol.profit:
         bestSol = copy.copy(sol)

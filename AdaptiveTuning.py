@@ -6,7 +6,7 @@ minInsDenominator = 0.6
 minInsNumerator = 1
 nnDenominator = 0.9
 nnNumerator = 1
-precision = 0.01
+precision = 0.0001
 exponents = [x for x in np.arange(0.1, 1.5, 0.1)]
 precisionList = [0.1, 0.01, 0.001, 0.0001]
 rclSize = 4
@@ -21,5 +21,5 @@ def TuneExponents():
     minInsDenominator = den
     minInsNumerator = num
     tuningIterator += 1
-    if tuningIterator == len(combinations):
-        noTuningLeft = True
+    if tuningIterator >= len(combinations) - 1:
+        return True
